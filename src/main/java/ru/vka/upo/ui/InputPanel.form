@@ -1,0 +1,444 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<Form version="1.5" maxVersion="1.9" type="org.netbeans.modules.form.forminfo.JPanelFormInfo">
+  <AuxValues>
+    <AuxValue name="FormSettings_autoResourcing" type="java.lang.Integer" value="0"/>
+    <AuxValue name="FormSettings_autoSetComponentName" type="java.lang.Boolean" value="false"/>
+    <AuxValue name="FormSettings_generateFQN" type="java.lang.Boolean" value="true"/>
+    <AuxValue name="FormSettings_generateMnemonicsCode" type="java.lang.Boolean" value="false"/>
+    <AuxValue name="FormSettings_i18nAutoMode" type="java.lang.Boolean" value="false"/>
+    <AuxValue name="FormSettings_layoutCodeTarget" type="java.lang.Integer" value="1"/>
+    <AuxValue name="FormSettings_listenerGenerationStyle" type="java.lang.Integer" value="0"/>
+    <AuxValue name="FormSettings_variablesLocal" type="java.lang.Boolean" value="false"/>
+    <AuxValue name="FormSettings_variablesModifier" type="java.lang.Integer" value="2"/>
+  </AuxValues>
+
+  <Layout>
+    <DimensionLayout dim="0">
+      <Group type="103" groupAlignment="0" attributes="0">
+        <Group type="102" attributes="0">
+          <EmptySpace max="-2" attributes="0"/>
+          <Group type="103" groupAlignment="0" attributes="0">
+            <Group type="102" alignment="0" attributes="0">
+              <Component id="lblVariant" min="-2" max="-2" attributes="0"/>
+              <EmptySpace max="-2" attributes="0"/>
+              <Component id="cmbVariant" min="-2" max="-2" attributes="0"/>
+              <EmptySpace max="-2" attributes="0"/>
+              <Component id="btnApplyVariant" min="-2" max="-2" attributes="0"/>
+            </Group>
+            <Group type="102" alignment="0" attributes="0">
+              <Component id="pnlModel" max="32767" attributes="0"/>
+              <EmptySpace max="-2" attributes="0"/>
+              <Component id="pnlMode" max="32767" attributes="0"/>
+            </Group>
+            <Component id="scrMessages" alignment="0" max="32767" attributes="0"/>
+            <Group type="102" alignment="0" attributes="0">
+              <EmptySpace min="0" pref="0" max="32767" attributes="0"/>
+              <Component id="btnBack" min="-2" max="-2" attributes="0"/>
+              <EmptySpace max="-2" attributes="0"/>
+              <Component id="btnCompute" min="-2" max="-2" attributes="0"/>
+            </Group>
+          </Group>
+          <EmptySpace max="-2" attributes="0"/>
+        </Group>
+      </Group>
+    </DimensionLayout>
+    <DimensionLayout dim="1">
+      <Group type="103" groupAlignment="0" attributes="0">
+        <Group type="102" attributes="0">
+          <EmptySpace max="-2" attributes="0"/>
+          <Group type="103" groupAlignment="3" attributes="0">
+            <Component id="lblVariant" alignment="3" min="-2" max="-2" attributes="0"/>
+            <Component id="cmbVariant" alignment="3" min="-2" max="-2" attributes="0"/>
+            <Component id="btnApplyVariant" alignment="3" min="-2" max="-2" attributes="0"/>
+          </Group>
+          <EmptySpace max="-2" attributes="0"/>
+          <Group type="103" groupAlignment="0" attributes="0">
+            <Component id="pnlModel" alignment="0" max="32767" attributes="0"/>
+            <Component id="pnlMode" alignment="0" max="32767" attributes="0"/>
+          </Group>
+          <EmptySpace max="-2" attributes="0"/>
+          <Component id="scrMessages" max="32767" attributes="0"/>
+          <EmptySpace max="-2" attributes="0"/>
+          <Group type="103" groupAlignment="3" attributes="0">
+            <Component id="btnBack" alignment="3" min="-2" max="-2" attributes="0"/>
+            <Component id="btnCompute" alignment="3" min="-2" max="-2" attributes="0"/>
+          </Group>
+          <EmptySpace max="-2" attributes="0"/>
+        </Group>
+      </Group>
+    </DimensionLayout>
+  </Layout>
+  <SubComponents>
+    <Component class="javax.swing.JLabel" name="lblVariant">
+      <Properties>
+        <Property name="text" type="java.lang.String" value="Вариант задания"/>
+      </Properties>
+    </Component>
+    <Component class="javax.swing.JComboBox" name="cmbVariant">
+    </Component>
+    <Component class="javax.swing.JButton" name="btnApplyVariant">
+      <Properties>
+        <Property name="text" type="java.lang.String" value="Загрузить заново"/>
+      </Properties>
+      <Events>
+        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="btnApplyVariantActionPerformed"/>
+      </Events>
+    </Component>
+    <Container class="javax.swing.JPanel" name="pnlModel">
+      <Layout>
+        <DimensionLayout dim="0">
+          <Group type="103" groupAlignment="0" attributes="0">
+            <Group type="102" attributes="0">
+              <EmptySpace max="-2" attributes="0"/>
+              <Group type="103" groupAlignment="0" attributes="0">
+                <Component id="lblMeasurer" alignment="0" min="-2" max="-2" attributes="0"/>
+                <Component id="lblMeasured" alignment="0" min="-2" max="-2" attributes="0"/>
+                <Component id="lblInterval" alignment="0" min="-2" max="-2" attributes="0"/>
+                <Component id="lblOrbitHeight" alignment="0" min="-2" max="-2" attributes="0"/>
+                <Component id="lblTrackDistance" alignment="0" min="-2" max="-2" attributes="0"/>
+                <Component id="lblTraverse" alignment="0" min="-2" max="-2" attributes="0"/>
+                <Component id="lblSpeed" alignment="0" min="-2" max="-2" attributes="0"/>
+                <Component id="lblSigmaRange" alignment="0" min="-2" max="-2" attributes="0"/>
+                <Component id="lblSigmaVelocity" alignment="0" min="-2" max="-2" attributes="0"/>
+              </Group>
+              <EmptySpace max="-2" attributes="0"/>
+              <Group type="103" groupAlignment="0" attributes="0">
+                <Component id="cmbMeasurer" alignment="0" min="-2" pref="190" max="-2" attributes="0"/>
+                <Component id="cmbMeasured" alignment="0" min="-2" pref="190" max="-2" attributes="0"/>
+                <Component id="txtInterval" alignment="0" min="-2" pref="190" max="-2" attributes="0"/>
+                <Component id="txtOrbitHeight" alignment="0" min="-2" pref="190" max="-2" attributes="0"/>
+                <Component id="txtTrackDistance" alignment="0" min="-2" pref="190" max="-2" attributes="0"/>
+                <Component id="txtTraverse" alignment="0" min="-2" pref="190" max="-2" attributes="0"/>
+                <Component id="txtSpeed" alignment="0" min="-2" pref="190" max="-2" attributes="0"/>
+                <Component id="txtSigmaRange" alignment="0" min="-2" pref="190" max="-2" attributes="0"/>
+                <Component id="txtSigmaVelocity" alignment="0" min="-2" pref="190" max="-2" attributes="0"/>
+              </Group>
+              <EmptySpace max="-2" attributes="0"/>
+              <Group type="103" groupAlignment="0" attributes="0">
+                <Component id="lblIntervalUnit" alignment="0" min="-2" max="-2" attributes="0"/>
+                <Component id="lblOrbitHeightUnit" alignment="0" min="-2" max="-2" attributes="0"/>
+                <Component id="lblTrackDistanceUnit" alignment="0" min="-2" max="-2" attributes="0"/>
+                <Component id="lblTraverseUnit" alignment="0" min="-2" max="-2" attributes="0"/>
+                <Component id="lblSpeedUnit" alignment="0" min="-2" max="-2" attributes="0"/>
+                <Component id="lblSigmaRangeUnit" alignment="0" min="-2" max="-2" attributes="0"/>
+                <Component id="lblSigmaVelocityUnit" alignment="0" min="-2" max="-2" attributes="0"/>
+              </Group>
+              <EmptySpace min="0" pref="0" max="32767" attributes="0"/>
+            </Group>
+          </Group>
+        </DimensionLayout>
+        <DimensionLayout dim="1">
+          <Group type="103" groupAlignment="0" attributes="0">
+            <Group type="102" attributes="0">
+              <EmptySpace max="-2" attributes="0"/>
+              <Group type="103" groupAlignment="3" attributes="0">
+                <Component id="lblMeasurer" alignment="3" min="-2" max="-2" attributes="0"/>
+                <Component id="cmbMeasurer" alignment="3" min="-2" max="-2" attributes="0"/>
+              </Group>
+              <EmptySpace max="-2" attributes="0"/>
+              <Group type="103" groupAlignment="3" attributes="0">
+                <Component id="lblMeasured" alignment="3" min="-2" max="-2" attributes="0"/>
+                <Component id="cmbMeasured" alignment="3" min="-2" max="-2" attributes="0"/>
+              </Group>
+              <EmptySpace max="-2" attributes="0"/>
+              <Group type="103" groupAlignment="3" attributes="0">
+                <Component id="lblInterval" alignment="3" min="-2" max="-2" attributes="0"/>
+                <Component id="txtInterval" alignment="3" min="-2" max="-2" attributes="0"/>
+                <Component id="lblIntervalUnit" alignment="3" min="-2" max="-2" attributes="0"/>
+              </Group>
+              <EmptySpace max="-2" attributes="0"/>
+              <Group type="103" groupAlignment="3" attributes="0">
+                <Component id="lblOrbitHeight" alignment="3" min="-2" max="-2" attributes="0"/>
+                <Component id="txtOrbitHeight" alignment="3" min="-2" max="-2" attributes="0"/>
+                <Component id="lblOrbitHeightUnit" alignment="3" min="-2" max="-2" attributes="0"/>
+              </Group>
+              <EmptySpace max="-2" attributes="0"/>
+              <Group type="103" groupAlignment="3" attributes="0">
+                <Component id="lblTrackDistance" alignment="3" min="-2" max="-2" attributes="0"/>
+                <Component id="txtTrackDistance" alignment="3" min="-2" max="-2" attributes="0"/>
+                <Component id="lblTrackDistanceUnit" alignment="3" min="-2" max="-2" attributes="0"/>
+              </Group>
+              <EmptySpace max="-2" attributes="0"/>
+              <Group type="103" groupAlignment="3" attributes="0">
+                <Component id="lblTraverse" alignment="3" min="-2" max="-2" attributes="0"/>
+                <Component id="txtTraverse" alignment="3" min="-2" max="-2" attributes="0"/>
+                <Component id="lblTraverseUnit" alignment="3" min="-2" max="-2" attributes="0"/>
+              </Group>
+              <EmptySpace max="-2" attributes="0"/>
+              <Group type="103" groupAlignment="3" attributes="0">
+                <Component id="lblSpeed" alignment="3" min="-2" max="-2" attributes="0"/>
+                <Component id="txtSpeed" alignment="3" min="-2" max="-2" attributes="0"/>
+                <Component id="lblSpeedUnit" alignment="3" min="-2" max="-2" attributes="0"/>
+              </Group>
+              <EmptySpace max="-2" attributes="0"/>
+              <Group type="103" groupAlignment="3" attributes="0">
+                <Component id="lblSigmaRange" alignment="3" min="-2" max="-2" attributes="0"/>
+                <Component id="txtSigmaRange" alignment="3" min="-2" max="-2" attributes="0"/>
+                <Component id="lblSigmaRangeUnit" alignment="3" min="-2" max="-2" attributes="0"/>
+              </Group>
+              <EmptySpace max="-2" attributes="0"/>
+              <Group type="103" groupAlignment="3" attributes="0">
+                <Component id="lblSigmaVelocity" alignment="3" min="-2" max="-2" attributes="0"/>
+                <Component id="txtSigmaVelocity" alignment="3" min="-2" max="-2" attributes="0"/>
+                <Component id="lblSigmaVelocityUnit" alignment="3" min="-2" max="-2" attributes="0"/>
+              </Group>
+              <EmptySpace max="-2" attributes="0"/>
+            </Group>
+          </Group>
+        </DimensionLayout>
+      </Layout>
+      <SubComponents>
+        <Component class="javax.swing.JLabel" name="lblMeasurer">
+          <Properties>
+            <Property name="text" type="java.lang.String" value="Признак траектории"/>
+          </Properties>
+        </Component>
+        <Component class="javax.swing.JComboBox" name="cmbMeasurer">
+        </Component>
+        <Component class="javax.swing.JLabel" name="lblMeasured">
+          <Properties>
+            <Property name="text" type="java.lang.String" value="Измеряемые параметры"/>
+          </Properties>
+        </Component>
+        <Component class="javax.swing.JComboBox" name="cmbMeasured">
+        </Component>
+        <Component class="javax.swing.JLabel" name="lblInterval">
+          <Properties>
+            <Property name="text" type="java.lang.String" value="Интервал измерений"/>
+          </Properties>
+        </Component>
+        <Component class="javax.swing.JTextField" name="txtInterval">
+        </Component>
+        <Component class="javax.swing.JLabel" name="lblIntervalUnit">
+          <Properties>
+            <Property name="text" type="java.lang.String" value="с"/>
+          </Properties>
+        </Component>
+        <Component class="javax.swing.JLabel" name="lblOrbitHeight">
+          <Properties>
+            <Property name="text" type="java.lang.String" value="Высота орбиты"/>
+          </Properties>
+        </Component>
+        <Component class="javax.swing.JTextField" name="txtOrbitHeight">
+        </Component>
+        <Component class="javax.swing.JLabel" name="lblOrbitHeightUnit">
+          <Properties>
+            <Property name="text" type="java.lang.String" value="км"/>
+          </Properties>
+        </Component>
+        <Component class="javax.swing.JLabel" name="lblTrackDistance">
+          <Properties>
+            <Property name="text" type="java.lang.String" value="Расстояние до трассы"/>
+          </Properties>
+        </Component>
+        <Component class="javax.swing.JTextField" name="txtTrackDistance">
+        </Component>
+        <Component class="javax.swing.JLabel" name="lblTrackDistanceUnit">
+          <Properties>
+            <Property name="text" type="java.lang.String" value="км"/>
+          </Properties>
+        </Component>
+        <Component class="javax.swing.JLabel" name="lblTraverse">
+          <Properties>
+            <Property name="text" type="java.lang.String" value="Траверзное расстояние"/>
+          </Properties>
+        </Component>
+        <Component class="javax.swing.JTextField" name="txtTraverse">
+        </Component>
+        <Component class="javax.swing.JLabel" name="lblTraverseUnit">
+          <Properties>
+            <Property name="text" type="java.lang.String" value="км"/>
+          </Properties>
+        </Component>
+        <Component class="javax.swing.JLabel" name="lblSpeed">
+          <Properties>
+            <Property name="text" type="java.lang.String" value="Относительная скорость"/>
+          </Properties>
+        </Component>
+        <Component class="javax.swing.JTextField" name="txtSpeed">
+        </Component>
+        <Component class="javax.swing.JLabel" name="lblSpeedUnit">
+          <Properties>
+            <Property name="text" type="java.lang.String" value="м/с"/>
+          </Properties>
+        </Component>
+        <Component class="javax.swing.JLabel" name="lblSigmaRange">
+          <Properties>
+            <Property name="text" type="java.lang.String" value="СКО измерения дальности"/>
+          </Properties>
+        </Component>
+        <Component class="javax.swing.JTextField" name="txtSigmaRange">
+        </Component>
+        <Component class="javax.swing.JLabel" name="lblSigmaRangeUnit">
+          <Properties>
+            <Property name="text" type="java.lang.String" value="м"/>
+          </Properties>
+        </Component>
+        <Component class="javax.swing.JLabel" name="lblSigmaVelocity">
+          <Properties>
+            <Property name="text" type="java.lang.String" value="СКО измерения скорости"/>
+          </Properties>
+        </Component>
+        <Component class="javax.swing.JTextField" name="txtSigmaVelocity">
+        </Component>
+        <Component class="javax.swing.JLabel" name="lblSigmaVelocityUnit">
+          <Properties>
+            <Property name="text" type="java.lang.String" value="м/с"/>
+          </Properties>
+        </Component>
+      </SubComponents>
+    </Container>
+    <Container class="javax.swing.JPanel" name="pnlMode">
+      <Layout>
+        <DimensionLayout dim="0">
+          <Group type="103" groupAlignment="0" attributes="0">
+            <Group type="102" attributes="0">
+              <EmptySpace max="-2" attributes="0"/>
+              <Group type="103" groupAlignment="0" attributes="0">
+                <Component id="lblDegree" alignment="0" min="-2" max="-2" attributes="0"/>
+                <Component id="lblSample" alignment="0" min="-2" max="-2" attributes="0"/>
+                <Component id="lblStep" alignment="0" min="-2" max="-2" attributes="0"/>
+                <Component id="lblAnchor" alignment="0" min="-2" max="-2" attributes="0"/>
+                <Component id="lblAveraging" alignment="0" min="-2" max="-2" attributes="0"/>
+              </Group>
+              <EmptySpace max="-2" attributes="0"/>
+              <Group type="103" groupAlignment="0" attributes="0">
+                <Component id="spnDegree" alignment="0" min="-2" pref="110" max="-2" attributes="0"/>
+                <Component id="spnSample" alignment="0" min="-2" pref="110" max="-2" attributes="0"/>
+                <Component id="txtStep" alignment="0" min="-2" pref="110" max="-2" attributes="0"/>
+                <Component id="spnAnchor" alignment="0" min="-2" pref="110" max="-2" attributes="0"/>
+                <Component id="lblAveragingValue" alignment="0" min="-2" pref="110" max="-2" attributes="0"/>
+              </Group>
+              <EmptySpace max="-2" attributes="0"/>
+              <Group type="103" groupAlignment="0" attributes="0">
+                <Component id="lblStepUnit" alignment="0" min="-2" max="-2" attributes="0"/>
+                <Component id="btnAnchorMiddle" alignment="0" min="-2" max="-2" attributes="0"/>
+              </Group>
+              <EmptySpace min="0" pref="0" max="32767" attributes="0"/>
+            </Group>
+          </Group>
+        </DimensionLayout>
+        <DimensionLayout dim="1">
+          <Group type="103" groupAlignment="0" attributes="0">
+            <Group type="102" attributes="0">
+              <EmptySpace max="-2" attributes="0"/>
+              <Group type="103" groupAlignment="3" attributes="0">
+                <Component id="lblDegree" alignment="3" min="-2" max="-2" attributes="0"/>
+                <Component id="spnDegree" alignment="3" min="-2" max="-2" attributes="0"/>
+              </Group>
+              <EmptySpace max="-2" attributes="0"/>
+              <Group type="103" groupAlignment="3" attributes="0">
+                <Component id="lblSample" alignment="3" min="-2" max="-2" attributes="0"/>
+                <Component id="spnSample" alignment="3" min="-2" max="-2" attributes="0"/>
+              </Group>
+              <EmptySpace max="-2" attributes="0"/>
+              <Group type="103" groupAlignment="3" attributes="0">
+                <Component id="lblStep" alignment="3" min="-2" max="-2" attributes="0"/>
+                <Component id="txtStep" alignment="3" min="-2" max="-2" attributes="0"/>
+                <Component id="lblStepUnit" alignment="3" min="-2" max="-2" attributes="0"/>
+              </Group>
+              <EmptySpace max="-2" attributes="0"/>
+              <Group type="103" groupAlignment="3" attributes="0">
+                <Component id="lblAnchor" alignment="3" min="-2" max="-2" attributes="0"/>
+                <Component id="spnAnchor" alignment="3" min="-2" max="-2" attributes="0"/>
+                <Component id="btnAnchorMiddle" alignment="3" min="-2" max="-2" attributes="0"/>
+              </Group>
+              <EmptySpace max="-2" attributes="0"/>
+              <Group type="103" groupAlignment="3" attributes="0">
+                <Component id="lblAveraging" alignment="3" min="-2" max="-2" attributes="0"/>
+                <Component id="lblAveragingValue" alignment="3" min="-2" max="-2" attributes="0"/>
+              </Group>
+              <EmptySpace max="-2" attributes="0"/>
+            </Group>
+          </Group>
+        </DimensionLayout>
+      </Layout>
+      <SubComponents>
+        <Component class="javax.swing.JLabel" name="lblDegree">
+          <Properties>
+            <Property name="text" type="java.lang.String" value="Степень полинома m"/>
+          </Properties>
+        </Component>
+        <Component class="javax.swing.JSpinner" name="spnDegree">
+        </Component>
+        <Component class="javax.swing.JLabel" name="lblSample">
+          <Properties>
+            <Property name="text" type="java.lang.String" value="Объём выборки N"/>
+          </Properties>
+        </Component>
+        <Component class="javax.swing.JSpinner" name="spnSample">
+        </Component>
+        <Component class="javax.swing.JLabel" name="lblStep">
+          <Properties>
+            <Property name="text" type="java.lang.String" value="Шаг измерений T"/>
+          </Properties>
+        </Component>
+        <Component class="javax.swing.JTextField" name="txtStep">
+        </Component>
+        <Component class="javax.swing.JLabel" name="lblStepUnit">
+          <Properties>
+            <Property name="text" type="java.lang.String" value="с"/>
+          </Properties>
+        </Component>
+        <Component class="javax.swing.JLabel" name="lblAnchor">
+          <Properties>
+            <Property name="text" type="java.lang.String" value="Момент привязки M0"/>
+          </Properties>
+        </Component>
+        <Component class="javax.swing.JSpinner" name="spnAnchor">
+        </Component>
+        <Component class="javax.swing.JButton" name="btnAnchorMiddle">
+          <Properties>
+            <Property name="text" type="java.lang.String" value="в середину"/>
+          </Properties>
+          <Events>
+            <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="btnAnchorMiddleActionPerformed"/>
+          </Events>
+        </Component>
+        <Component class="javax.swing.JLabel" name="lblAveraging">
+          <Properties>
+            <Property name="text" type="java.lang.String" value="Интервал усреднения"/>
+          </Properties>
+        </Component>
+        <Component class="javax.swing.JLabel" name="lblAveragingValue">
+          <Properties>
+            <Property name="text" type="java.lang.String" value="–"/>
+          </Properties>
+        </Component>
+      </SubComponents>
+    </Container>
+    <Container class="javax.swing.JScrollPane" name="scrMessages">
+      <AuxValues>
+        <AuxValue name="autoScrollPane" type="java.lang.Boolean" value="true"/>
+      </AuxValues>
+      <SubComponents>
+        <Component class="javax.swing.JTextArea" name="txtMessages">
+          <Properties>
+            <Property name="editable" type="boolean" value="false"/>
+            <Property name="lineWrap" type="boolean" value="true"/>
+            <Property name="wrapStyleWord" type="boolean" value="true"/>
+            <Property name="columns" type="int" value="20"/>
+            <Property name="rows" type="int" value="4"/>
+          </Properties>
+        </Component>
+      </SubComponents>
+    </Container>
+    <Component class="javax.swing.JButton" name="btnBack">
+      <Properties>
+        <Property name="text" type="java.lang.String" value="К началу"/>
+      </Properties>
+      <Events>
+        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="btnBackActionPerformed"/>
+      </Events>
+    </Component>
+    <Component class="javax.swing.JButton" name="btnCompute">
+      <Properties>
+        <Property name="text" type="java.lang.String" value="Рассчитать"/>
+      </Properties>
+      <Events>
+        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="btnComputeActionPerformed"/>
+      </Events>
+    </Component>
+  </SubComponents>
+</Form>

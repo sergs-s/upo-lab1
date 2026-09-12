@@ -1,0 +1,26 @@
+# Maven: результат сборки и сгенерированная Javadoc-документация
+target/
+
+# NetBeans: пользовательские настройки IDE
+nbproject/private/
+nbbuild/
+dist/
+nbdist/
+.nb-gradle/
+
+# Временные файлы и резервные копии
+*.class
+*.log
+*.tmp
+*.bak
+*.swp
+*~
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+# IntelliJ IDEA / VS Code, если проект когда-либо открывается в них
+.idea/
+*.iml
+.vscode/

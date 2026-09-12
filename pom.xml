@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>ru.vka</groupId>
+    <artifactId>upo-lab1</artifactId>
+    <version>1.0</version>
+    <packaging>jar</packaging>
+
+    <name>Лабораторная работа "Предварительная обработка"</name>
+    <description>Исследование эффективности устройств предварительной обработки
+        радионавигационных систем. ВКА имени А.Ф. Можайского, кафедра космической
+        радиолокации и радионавигации.</description>
+
+    <properties>
+        <!-- Кодировка исходников, ресурсов и файлов проекта -->
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <!-- Кодировка отчётов Maven и HTML, создаваемого Javadoc -->
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+
+        <!-- Java 8: на кафедральных компьютерах может быть установлена версия
+        старше 11, а исходный код не использует ничего новее восьмой
+        версии (проверено компиляцией с флагом release=8), поэтому
+        понижение целевой версии ничего не ломает, зато собранная
+        программа запускается на любой Java 8 и новее. -->
+        <maven.compiler.release>8</maven.compiler.release>
+    </properties>
+
+    <!-- Внешних зависимостей нет: только стандартная библиотека Java и Swing.
+    Проект собирается и запускается на любой машине без доступа в интернет. -->
+
+    <build>
+        <finalName>upo-lab1</finalName>
+        <plugins>
+            <!-- jar кладётся не в target/, а сразу в target/dist – туда же,
+            куда следующий плагин копирует настройки и батник запуска:
+            после сборки в target/dist оказывается всё, что нужно, чтобы
+            перенести программу на другой компьютер одной папкой -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.3.0</version>
+                <configuration>
+                    <outputDirectory>${project.build.directory}/dist</outputDirectory>
+                    <archive>
+                        <manifest>
+                            <mainClass>ru.vka.upo.App</mainClass>
+                        </manifest>
+                    </archive>
+                </configuration>
+            </plugin>
+            <!-- настроечный файл (из корня проекта – его же читает программа
+            при запуске из-под NetBeans) и батник запуска (из
+            src/main/dist) копируются рядом с jar-ом -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>3.3.1</version>
+                <executions>
+                    <execution>
+                        <id>collect-dist-files</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/dist</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${project.basedir}</directory>
+                                    <includes>
+                                        <include>Настройки.properties</include>
+                                    </includes>
+                                </resource>
+                                <resource>
+                                    <directory>${project.basedir}/src/main/dist</directory>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

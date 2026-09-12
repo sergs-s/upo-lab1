@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<Form version="1.5" maxVersion="1.9" type="org.netbeans.modules.form.forminfo.JPanelFormInfo">
+  <AuxValues>
+    <AuxValue name="FormSettings_autoResourcing" type="java.lang.Integer" value="0"/>
+    <AuxValue name="FormSettings_autoSetComponentName" type="java.lang.Boolean" value="false"/>
+    <AuxValue name="FormSettings_generateFQN" type="java.lang.Boolean" value="true"/>
+    <AuxValue name="FormSettings_generateMnemonicsCode" type="java.lang.Boolean" value="false"/>
+    <AuxValue name="FormSettings_i18nAutoMode" type="java.lang.Boolean" value="false"/>
+    <AuxValue name="FormSettings_layoutCodeTarget" type="java.lang.Integer" value="1"/>
+    <AuxValue name="FormSettings_listenerGenerationStyle" type="java.lang.Integer" value="0"/>
+    <AuxValue name="FormSettings_variablesLocal" type="java.lang.Boolean" value="false"/>
+    <AuxValue name="FormSettings_variablesModifier" type="java.lang.Integer" value="2"/>
+  </AuxValues>
+
+  <Layout>
+    <DimensionLayout dim="0">
+      <Group type="103" groupAlignment="0" attributes="0">
+        <Group type="102" attributes="0">
+          <EmptySpace max="-2" attributes="0"/>
+          <Group type="103" groupAlignment="0" attributes="0">
+            <Group type="102" alignment="0" attributes="0">
+              <Component id="lblItem" min="-2" max="-2" attributes="0"/>
+              <EmptySpace max="-2" attributes="0"/>
+              <Component id="cmbItem" min="-2" max="-2" attributes="0"/>
+            </Group>
+            <Component id="lblFixed" alignment="0" max="32767" attributes="0"/>
+            <Group type="102" alignment="0" attributes="0">
+              <Component id="lblSource" min="-2" max="-2" attributes="0"/>
+              <EmptySpace max="-2" attributes="0"/>
+              <Component id="spnSourceRow" min="-2" max="-2" attributes="0"/>
+              <EmptySpace max="-2" attributes="0"/>
+              <Component id="lblDegree" min="-2" max="-2" attributes="0"/>
+              <EmptySpace max="-2" attributes="0"/>
+              <Component id="spnDegree" min="-2" max="-2" attributes="0"/>
+            </Group>
+            <Group type="102" alignment="0" attributes="0">
+              <Component id="scrTable" max="32767" attributes="0"/>
+              <EmptySpace max="-2" attributes="0"/>
+              <Component id="pnlChart" max="32767" attributes="0"/>
+            </Group>
+            <Component id="scrConclusion" alignment="0" max="32767" attributes="0"/>
+            <Component id="lblCheck" alignment="0" max="32767" attributes="0"/>
+            <Group type="102" alignment="0" attributes="0">
+              <EmptySpace min="0" pref="0" max="32767" attributes="0"/>
+              <Component id="btnBack" min="-2" max="-2" attributes="0"/>
+              <EmptySpace max="-2" attributes="0"/>
+              <Component id="btnTask" min="-2" max="-2" attributes="0"/>
+              <EmptySpace max="-2" attributes="0"/>
+              <Component id="btnHelp" min="-2" max="-2" attributes="0"/>
+              <EmptySpace max="-2" attributes="0"/>
+              <Component id="btnClear" min="-2" max="-2" attributes="0"/>
+              <EmptySpace max="-2" attributes="0"/>
+              <Component id="btnPlot" min="-2" max="-2" attributes="0"/>
+              <EmptySpace max="-2" attributes="0"/>
+              <Component id="btnReport" min="-2" max="-2" attributes="0"/>
+            </Group>
+          </Group>
+          <EmptySpace max="-2" attributes="0"/>
+        </Group>
+      </Group>
+    </DimensionLayout>
+    <DimensionLayout dim="1">
+      <Group type="103" groupAlignment="0" attributes="0">
+        <Group type="102" attributes="0">
+          <EmptySpace max="-2" attributes="0"/>
+          <Group type="103" groupAlignment="3" attributes="0">
+            <Component id="lblItem" alignment="3" min="-2" max="-2" attributes="0"/>
+            <Component id="cmbItem" alignment="3" min="-2" max="-2" attributes="0"/>
+          </Group>
+          <EmptySpace max="-2" attributes="0"/>
+          <Component id="lblFixed" min="-2" max="-2" attributes="0"/>
+          <EmptySpace max="-2" attributes="0"/>
+          <Group type="103" groupAlignment="3" attributes="0">
+            <Component id="lblSource" alignment="3" min="-2" max="-2" attributes="0"/>
+            <Component id="spnSourceRow" alignment="3" min="-2" max="-2" attributes="0"/>
+            <Component id="lblDegree" alignment="3" min="-2" max="-2" attributes="0"/>
+            <Component id="spnDegree" alignment="3" min="-2" max="-2" attributes="0"/>
+          </Group>
+          <EmptySpace max="-2" attributes="0"/>
+          <Group type="103" groupAlignment="0" attributes="0">
+            <Component id="scrTable" alignment="0" max="32767" attributes="0"/>
+            <Component id="pnlChart" alignment="0" max="32767" attributes="0"/>
+          </Group>
+          <EmptySpace max="-2" attributes="0"/>
+          <Component id="scrConclusion" min="-2" pref="80" max="-2" attributes="0"/>
+          <EmptySpace max="-2" attributes="0"/>
+          <Component id="lblCheck" min="-2" max="-2" attributes="0"/>
+          <EmptySpace max="-2" attributes="0"/>
+          <Group type="103" groupAlignment="3" attributes="0">
+            <Component id="btnBack" alignment="3" min="-2" max="-2" attributes="0"/>
+            <Component id="btnTask" alignment="3" min="-2" max="-2" attributes="0"/>
+            <Component id="btnHelp" alignment="3" min="-2" max="-2" attributes="0"/>
+            <Component id="btnClear" alignment="3" min="-2" max="-2" attributes="0"/>
+            <Component id="btnPlot" alignment="3" min="-2" max="-2" attributes="0"/>
+            <Component id="btnReport" alignment="3" min="-2" max="-2" attributes="0"/>
+          </Group>
+          <EmptySpace max="-2" attributes="0"/>
+        </Group>
+      </Group>
+    </DimensionLayout>
+  </Layout>
+  <SubComponents>
+    <Component class="javax.swing.JLabel" name="lblItem">
+      <Properties>
+        <Property name="text" type="java.lang.String" value="Пункт задания"/>
+      </Properties>
+    </Component>
+    <Component class="javax.swing.JComboBox" name="cmbItem">
+      <Events>
+        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="cmbItemActionPerformed"/>
+      </Events>
+    </Component>
+    <Component class="javax.swing.JLabel" name="lblFixed">
+      <Properties>
+        <Property name="text" type="java.lang.String" value=" "/>
+      </Properties>
+    </Component>
+    <Component class="javax.swing.JLabel" name="lblSource">
+      <Properties>
+        <Property name="text" type="java.lang.String" value="Числа берутся из строки таблицы результатов №"/>
+      </Properties>
+    </Component>
+    <Component class="javax.swing.JSpinner" name="spnSourceRow">
+    </Component>
+    <Component class="javax.swing.JLabel" name="lblDegree">
+      <Properties>
+        <Property name="text" type="java.lang.String" value="Степень m, выбранная в пункте а"/>
+      </Properties>
+    </Component>
+    <Component class="javax.swing.JSpinner" name="spnDegree">
+    </Component>
+    <Component class="javax.swing.JButton" name="btnPlot">
+      <Properties>
+        <Property name="text" type="java.lang.String" value="Построить график"/>
+      </Properties>
+      <Events>
+        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="btnPlotActionPerformed"/>
+      </Events>
+    </Component>
+    <Component class="javax.swing.JButton" name="btnClear">
+      <Properties>
+        <Property name="text" type="java.lang.String" value="Стереть числа пункта"/>
+      </Properties>
+      <Events>
+        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="btnClearActionPerformed"/>
+      </Events>
+    </Component>
+    <Component class="javax.swing.JScrollPane" name="scrTable">
+    </Component>
+    <Container class="javax.swing.JPanel" name="pnlChart">
+      <Layout>
+        <DimensionLayout dim="0">
+          <Group type="103" groupAlignment="0" attributes="0">
+            <EmptySpace min="0" pref="520" max="32767" attributes="0"/>
+          </Group>
+        </DimensionLayout>
+        <DimensionLayout dim="1">
+          <Group type="103" groupAlignment="0" attributes="0">
+            <EmptySpace min="0" pref="280" max="32767" attributes="0"/>
+          </Group>
+        </DimensionLayout>
+      </Layout>
+    </Container>
+    <Container class="javax.swing.JScrollPane" name="scrConclusion">
+      <AuxValues>
+        <AuxValue name="autoScrollPane" type="java.lang.Boolean" value="true"/>
+      </AuxValues>
+      <SubComponents>
+        <Component class="javax.swing.JTextArea" name="txtConclusion">
+          <Properties>
+            <Property name="lineWrap" type="boolean" value="true"/>
+            <Property name="wrapStyleWord" type="boolean" value="true"/>
+            <Property name="columns" type="int" value="20"/>
+            <Property name="rows" type="int" value="3"/>
+          </Properties>
+        </Component>
+      </SubComponents>
+    </Container>
+    <Component class="javax.swing.JLabel" name="lblCheck">
+      <Properties>
+        <Property name="text" type="java.lang.String" value=" "/>
+      </Properties>
+    </Component>
+    <Component class="javax.swing.JButton" name="btnBack">
+      <Properties>
+        <Property name="text" type="java.lang.String" value="К расчёту"/>
+      </Properties>
+      <Events>
+        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="btnBackActionPerformed"/>
+      </Events>
+    </Component>
+    <Component class="javax.swing.JButton" name="btnHelp">
+      <Properties>
+        <Property name="text" type="java.lang.String" value="Сведения из теории"/>
+      </Properties>
+      <Events>
+        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="btnHelpActionPerformed"/>
+      </Events>
+    </Component>
+    <Component class="javax.swing.JButton" name="btnTask">
+      <Properties>
+        <Property name="text" type="java.lang.String" value="Задание на работу"/>
+      </Properties>
+      <Events>
+        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="btnTaskActionPerformed"/>
+      </Events>
+    </Component>
+    <Component class="javax.swing.JButton" name="btnReport">
+      <Properties>
+        <Property name="text" type="java.lang.String" value="Сохранить отчёт"/>
+      </Properties>
+      <Events>
+        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="btnReportActionPerformed"/>
+      </Events>
+    </Component>
+  </SubComponents>
+</Form>

@@ -1,0 +1,249 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<Form version="1.5" maxVersion="1.9" type="org.netbeans.modules.form.forminfo.JPanelFormInfo">
+  <AuxValues>
+    <AuxValue name="FormSettings_autoResourcing" type="java.lang.Integer" value="0"/>
+    <AuxValue name="FormSettings_autoSetComponentName" type="java.lang.Boolean" value="false"/>
+    <AuxValue name="FormSettings_generateFQN" type="java.lang.Boolean" value="true"/>
+    <AuxValue name="FormSettings_generateMnemonicsCode" type="java.lang.Boolean" value="false"/>
+    <AuxValue name="FormSettings_i18nAutoMode" type="java.lang.Boolean" value="false"/>
+    <AuxValue name="FormSettings_layoutCodeTarget" type="java.lang.Integer" value="1"/>
+    <AuxValue name="FormSettings_listenerGenerationStyle" type="java.lang.Integer" value="0"/>
+    <AuxValue name="FormSettings_variablesLocal" type="java.lang.Boolean" value="false"/>
+    <AuxValue name="FormSettings_variablesModifier" type="java.lang.Integer" value="2"/>
+  </AuxValues>
+
+  <Layout>
+    <DimensionLayout dim="0">
+      <Group type="103" groupAlignment="0" attributes="0">
+        <Group type="102" attributes="0">
+          <EmptySpace max="-2" attributes="0"/>
+          <Group type="103" groupAlignment="0" attributes="0">
+            <Group type="102" alignment="0" attributes="0">
+              <Component id="rbStudent" min="-2" max="-2" attributes="0"/>
+              <EmptySpace max="-2" attributes="0"/>
+              <Component id="rbTeacher" min="-2" max="-2" attributes="0"/>
+            </Group>
+            <Component id="pnlStudent" alignment="0" max="32767" attributes="0"/>
+            <Group type="102" alignment="0" attributes="0">
+              <Component id="lblAssigned" min="-2" max="-2" attributes="0"/>
+              <EmptySpace max="-2" attributes="0"/>
+              <Component id="lblAssignedValue" min="-2" max="-2" attributes="0"/>
+            </Group>
+            <Component id="pnlTeacher" alignment="0" max="32767" attributes="0"/>
+            <Component id="scrInfo" alignment="0" max="32767" attributes="0"/>
+            <Group type="102" alignment="0" attributes="0">
+              <EmptySpace min="0" pref="0" max="32767" attributes="0"/>
+              <Component id="btnTask" min="-2" max="-2" attributes="0"/>
+              <EmptySpace max="-2" attributes="0"/>
+              <Component id="btnEnter" min="-2" max="-2" attributes="0"/>
+            </Group>
+          </Group>
+          <EmptySpace max="-2" attributes="0"/>
+        </Group>
+      </Group>
+    </DimensionLayout>
+    <DimensionLayout dim="1">
+      <Group type="103" groupAlignment="0" attributes="0">
+        <Group type="102" attributes="0">
+          <EmptySpace max="-2" attributes="0"/>
+          <Group type="103" groupAlignment="3" attributes="0">
+            <Component id="rbStudent" alignment="3" min="-2" max="-2" attributes="0"/>
+            <Component id="rbTeacher" alignment="3" min="-2" max="-2" attributes="0"/>
+          </Group>
+          <EmptySpace max="-2" attributes="0"/>
+          <Component id="pnlStudent" min="-2" max="-2" attributes="0"/>
+          <EmptySpace max="-2" attributes="0"/>
+          <Group type="103" groupAlignment="3" attributes="0">
+            <Component id="lblAssigned" alignment="3" min="-2" max="-2" attributes="0"/>
+            <Component id="lblAssignedValue" alignment="3" min="-2" max="-2" attributes="0"/>
+          </Group>
+          <EmptySpace max="-2" attributes="0"/>
+          <Component id="pnlTeacher" min="-2" max="-2" attributes="0"/>
+          <EmptySpace max="-2" attributes="0"/>
+          <Component id="scrInfo" max="32767" attributes="0"/>
+          <EmptySpace max="-2" attributes="0"/>
+          <Group type="103" groupAlignment="3" attributes="0">
+            <Component id="btnTask" alignment="3" min="-2" max="-2" attributes="0"/>
+            <Component id="btnEnter" alignment="3" min="-2" max="-2" attributes="0"/>
+          </Group>
+          <EmptySpace max="-2" attributes="0"/>
+        </Group>
+      </Group>
+    </DimensionLayout>
+  </Layout>
+  <SubComponents>
+    <Component class="javax.swing.JRadioButton" name="rbStudent">
+      <Properties>
+        <Property name="text" type="java.lang.String" value="обучающийся"/>
+      </Properties>
+      <Events>
+        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="rbStudentActionPerformed"/>
+      </Events>
+    </Component>
+    <Component class="javax.swing.JRadioButton" name="rbTeacher">
+      <Properties>
+        <Property name="text" type="java.lang.String" value="преподаватель"/>
+      </Properties>
+      <Events>
+        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="rbTeacherActionPerformed"/>
+      </Events>
+    </Component>
+    <Container class="javax.swing.JPanel" name="pnlStudent">
+      <Layout>
+        <DimensionLayout dim="0">
+          <Group type="103" groupAlignment="0" attributes="0">
+            <Group type="102" attributes="0">
+              <EmptySpace max="-2" attributes="0"/>
+              <Group type="103" groupAlignment="0" attributes="0">
+                <Component id="lblName" alignment="0" min="-2" max="-2" attributes="0"/>
+                <Component id="lblGroup" alignment="0" min="-2" max="-2" attributes="0"/>
+                <Component id="lblListNumber" alignment="0" min="-2" max="-2" attributes="0"/>
+              </Group>
+              <EmptySpace max="-2" attributes="0"/>
+              <Group type="103" groupAlignment="0" attributes="0">
+                <Component id="txtName" alignment="0" min="-2" pref="200" max="-2" attributes="0"/>
+                <Component id="txtGroup" alignment="0" min="-2" pref="200" max="-2" attributes="0"/>
+                <Component id="spnListNumber" alignment="0" min="-2" pref="200" max="-2" attributes="0"/>
+              </Group>
+              <EmptySpace max="-2" attributes="0"/>
+              <Group type="103" groupAlignment="0" attributes="0">
+              </Group>
+              <EmptySpace min="0" pref="0" max="32767" attributes="0"/>
+            </Group>
+          </Group>
+        </DimensionLayout>
+        <DimensionLayout dim="1">
+          <Group type="103" groupAlignment="0" attributes="0">
+            <Group type="102" attributes="0">
+              <EmptySpace max="-2" attributes="0"/>
+              <Group type="103" groupAlignment="3" attributes="0">
+                <Component id="lblName" alignment="3" min="-2" max="-2" attributes="0"/>
+                <Component id="txtName" alignment="3" min="-2" max="-2" attributes="0"/>
+              </Group>
+              <EmptySpace max="-2" attributes="0"/>
+              <Group type="103" groupAlignment="3" attributes="0">
+                <Component id="lblGroup" alignment="3" min="-2" max="-2" attributes="0"/>
+                <Component id="txtGroup" alignment="3" min="-2" max="-2" attributes="0"/>
+              </Group>
+              <EmptySpace max="-2" attributes="0"/>
+              <Group type="103" groupAlignment="3" attributes="0">
+                <Component id="lblListNumber" alignment="3" min="-2" max="-2" attributes="0"/>
+                <Component id="spnListNumber" alignment="3" min="-2" max="-2" attributes="0"/>
+              </Group>
+              <EmptySpace max="-2" attributes="0"/>
+            </Group>
+          </Group>
+        </DimensionLayout>
+      </Layout>
+      <SubComponents>
+        <Component class="javax.swing.JLabel" name="lblName">
+          <Properties>
+            <Property name="text" type="java.lang.String" value="Фамилия и инициалы"/>
+          </Properties>
+        </Component>
+        <Component class="javax.swing.JTextField" name="txtName">
+        </Component>
+        <Component class="javax.swing.JLabel" name="lblGroup">
+          <Properties>
+            <Property name="text" type="java.lang.String" value="Учебная группа"/>
+          </Properties>
+        </Component>
+        <Component class="javax.swing.JTextField" name="txtGroup">
+        </Component>
+        <Component class="javax.swing.JLabel" name="lblListNumber">
+          <Properties>
+            <Property name="text" type="java.lang.String" value="Номер по списку в журнале"/>
+          </Properties>
+        </Component>
+        <Component class="javax.swing.JSpinner" name="spnListNumber">
+        </Component>
+      </SubComponents>
+    </Container>
+    <Container class="javax.swing.JPanel" name="pnlTeacher">
+      <Layout>
+        <DimensionLayout dim="0">
+          <Group type="103" groupAlignment="0" attributes="0">
+            <Group type="102" attributes="0">
+              <EmptySpace max="-2" attributes="0"/>
+              <Group type="103" groupAlignment="0" attributes="0">
+                <Component id="lblPassword" alignment="0" min="-2" max="-2" attributes="0"/>
+              </Group>
+              <EmptySpace max="-2" attributes="0"/>
+              <Group type="103" groupAlignment="0" attributes="0">
+                <Component id="pwdTeacher" alignment="0" min="-2" pref="200" max="-2" attributes="0"/>
+              </Group>
+              <EmptySpace max="-2" attributes="0"/>
+              <Group type="103" groupAlignment="0" attributes="0">
+              </Group>
+              <EmptySpace min="0" pref="0" max="32767" attributes="0"/>
+            </Group>
+          </Group>
+        </DimensionLayout>
+        <DimensionLayout dim="1">
+          <Group type="103" groupAlignment="0" attributes="0">
+            <Group type="102" attributes="0">
+              <EmptySpace max="-2" attributes="0"/>
+              <Group type="103" groupAlignment="3" attributes="0">
+                <Component id="lblPassword" alignment="3" min="-2" max="-2" attributes="0"/>
+                <Component id="pwdTeacher" alignment="3" min="-2" max="-2" attributes="0"/>
+              </Group>
+              <EmptySpace max="-2" attributes="0"/>
+            </Group>
+          </Group>
+        </DimensionLayout>
+      </Layout>
+      <SubComponents>
+        <Component class="javax.swing.JLabel" name="lblPassword">
+          <Properties>
+            <Property name="text" type="java.lang.String" value="Пароль преподавателя"/>
+          </Properties>
+        </Component>
+        <Component class="javax.swing.JPasswordField" name="pwdTeacher">
+        </Component>
+      </SubComponents>
+    </Container>
+    <Container class="javax.swing.JScrollPane" name="scrInfo">
+      <AuxValues>
+        <AuxValue name="autoScrollPane" type="java.lang.Boolean" value="true"/>
+      </AuxValues>
+      <SubComponents>
+        <Component class="javax.swing.JTextArea" name="txtInfo">
+          <Properties>
+            <Property name="editable" type="boolean" value="false"/>
+            <Property name="lineWrap" type="boolean" value="true"/>
+            <Property name="wrapStyleWord" type="boolean" value="true"/>
+            <Property name="columns" type="int" value="20"/>
+            <Property name="rows" type="int" value="6"/>
+          </Properties>
+        </Component>
+      </SubComponents>
+    </Container>
+    <Component class="javax.swing.JButton" name="btnTask">
+      <Properties>
+        <Property name="text" type="java.lang.String" value="Задание на работу"/>
+      </Properties>
+      <Events>
+        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="btnTaskActionPerformed"/>
+      </Events>
+    </Component>
+    <Component class="javax.swing.JButton" name="btnEnter">
+      <Properties>
+        <Property name="text" type="java.lang.String" value="Войти"/>
+      </Properties>
+      <Events>
+        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="btnEnterActionPerformed"/>
+      </Events>
+    </Component>
+    <Component class="javax.swing.JLabel" name="lblAssigned">
+      <Properties>
+        <Property name="text" type="java.lang.String" value="Назначенный вариант"/>
+      </Properties>
+    </Component>
+    <Component class="javax.swing.JLabel" name="lblAssignedValue">
+      <Properties>
+        <Property name="text" type="java.lang.String" value="–"/>
+      </Properties>
+    </Component>
+  </SubComponents>
+</Form>
