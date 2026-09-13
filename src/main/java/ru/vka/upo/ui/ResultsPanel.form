@@ -20,11 +20,13 @@
           <EmptySpace max="-2" attributes="0"/>
           <Group type="103" groupAlignment="0" attributes="0">
             <Component id="lblMode" alignment="0" max="32767" attributes="0"/>
+            <Component id="pnlModeButtons" alignment="0" max="32767" attributes="0"/>
             <Component id="scrTable" alignment="0" max="32767" attributes="0"/>
             <Component id="lblWrite" alignment="0" max="32767" attributes="0"/>
             <Component id="pnlPictures" alignment="0" max="32767" attributes="0"/>
             <Component id="lblCaption" alignment="0" max="32767" attributes="0"/>
             <Component id="lblNoise" alignment="0" max="32767" attributes="0"/>
+            <Component id="pnlNoiseButtons" alignment="0" max="32767" attributes="0"/>
             <Group type="102" alignment="0" attributes="0">
               <EmptySpace min="0" pref="0" max="32767" attributes="0"/>
               <Component id="btnBack" min="-2" max="-2" attributes="0"/>
@@ -32,8 +34,6 @@
               <Component id="btnTask" min="-2" max="-2" attributes="0"/>
               <EmptySpace max="-2" attributes="0"/>
               <Component id="btnHelp" min="-2" max="-2" attributes="0"/>
-              <EmptySpace max="-2" attributes="0"/>
-              <Component id="btnNoise" min="-2" max="-2" attributes="0"/>
               <EmptySpace max="-2" attributes="0"/>
               <Component id="btnNotebook" min="-2" max="-2" attributes="0"/>
             </Group>
@@ -48,6 +48,8 @@
           <EmptySpace max="-2" attributes="0"/>
           <Component id="lblMode" min="-2" max="-2" attributes="0"/>
           <EmptySpace max="-2" attributes="0"/>
+          <Component id="pnlModeButtons" min="-2" max="-2" attributes="0"/>
+          <EmptySpace max="-2" attributes="0"/>
           <Component id="scrTable" min="-2" pref="175" max="-2" attributes="0"/>
           <EmptySpace max="-2" attributes="0"/>
           <Component id="lblWrite" min="-2" max="-2" attributes="0"/>
@@ -58,11 +60,12 @@
           <EmptySpace max="-2" attributes="0"/>
           <Component id="lblNoise" min="-2" max="-2" attributes="0"/>
           <EmptySpace max="-2" attributes="0"/>
+          <Component id="pnlNoiseButtons" min="-2" max="-2" attributes="0"/>
+          <EmptySpace max="-2" attributes="0"/>
           <Group type="103" groupAlignment="3" attributes="0">
             <Component id="btnBack" alignment="3" min="-2" max="-2" attributes="0"/>
             <Component id="btnTask" alignment="3" min="-2" max="-2" attributes="0"/>
             <Component id="btnHelp" alignment="3" min="-2" max="-2" attributes="0"/>
-            <Component id="btnNoise" alignment="3" min="-2" max="-2" attributes="0"/>
             <Component id="btnNotebook" alignment="3" min="-2" max="-2" attributes="0"/>
           </Group>
           <EmptySpace max="-2" attributes="0"/>
@@ -76,7 +79,39 @@
         <Property name="text" type="java.lang.String" value="Режим обработки"/>
       </Properties>
     </Component>
+    <Container class="javax.swing.JPanel" name="pnlModeButtons">
+      <Layout>
+        <DimensionLayout dim="0">
+          <Group type="103" groupAlignment="0" attributes="0">
+            <Group type="102" alignment="0" attributes="0">
+              <EmptySpace min="0" pref="0" max="32767" attributes="0"/>
+              <Component id="btnModeParams" min="-2" max="-2" attributes="0"/>
+            </Group>
+          </Group>
+        </DimensionLayout>
+        <DimensionLayout dim="1">
+          <Group type="103" groupAlignment="0" attributes="0">
+            <Component id="btnModeParams" alignment="0" min="-2" max="-2" attributes="0"/>
+          </Group>
+        </DimensionLayout>
+      </Layout>
+      <SubComponents>
+        <Component class="javax.swing.JButton" name="btnModeParams">
+          <Properties>
+            <Property name="text" type="java.lang.String" value="Параметры режима обработки"/>
+          </Properties>
+          <Events>
+            <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="btnModeParamsActionPerformed"/>
+          </Events>
+        </Component>
+      </SubComponents>
+    </Container>
     <Component class="javax.swing.JScrollPane" name="scrTable">
+    </Component>
+    <Component class="javax.swing.JLabel" name="lblWrite">
+      <Properties>
+        <Property name="text" type="java.lang.String" value=" "/>
+      </Properties>
     </Component>
     <Container class="javax.swing.JPanel" name="pnlPictures">
       <Layout>
@@ -92,11 +127,6 @@
         </DimensionLayout>
       </Layout>
     </Container>
-    <Component class="javax.swing.JLabel" name="lblWrite">
-      <Properties>
-        <Property name="text" type="java.lang.String" value=" "/>
-      </Properties>
-    </Component>
     <Component class="javax.swing.JLabel" name="lblCaption">
       <Properties>
         <Property name="text" type="java.lang.String" value=" "/>
@@ -107,20 +137,39 @@
         <Property name="text" type="java.lang.String" value=" "/>
       </Properties>
     </Component>
+    <Container class="javax.swing.JPanel" name="pnlNoiseButtons">
+      <Layout>
+        <DimensionLayout dim="0">
+          <Group type="103" groupAlignment="0" attributes="0">
+            <Group type="102" alignment="0" attributes="0">
+              <EmptySpace min="0" pref="0" max="32767" attributes="0"/>
+              <Component id="btnNoise" min="-2" max="-2" attributes="0"/>
+            </Group>
+          </Group>
+        </DimensionLayout>
+        <DimensionLayout dim="1">
+          <Group type="103" groupAlignment="0" attributes="0">
+            <Component id="btnNoise" alignment="0" min="-2" max="-2" attributes="0"/>
+          </Group>
+        </DimensionLayout>
+      </Layout>
+      <SubComponents>
+        <Component class="javax.swing.JButton" name="btnNoise">
+          <Properties>
+            <Property name="text" type="java.lang.String" value="Другая реализация шума"/>
+          </Properties>
+          <Events>
+            <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="btnNoiseActionPerformed"/>
+          </Events>
+        </Component>
+      </SubComponents>
+    </Container>
     <Component class="javax.swing.JButton" name="btnBack">
       <Properties>
         <Property name="text" type="java.lang.String" value="К вводу данных"/>
       </Properties>
       <Events>
         <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="btnBackActionPerformed"/>
-      </Events>
-    </Component>
-    <Component class="javax.swing.JButton" name="btnNoise">
-      <Properties>
-        <Property name="text" type="java.lang.String" value="Другая реализация шума"/>
-      </Properties>
-      <Events>
-        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="btnNoiseActionPerformed"/>
       </Events>
     </Component>
     <Component class="javax.swing.JButton" name="btnHelp">

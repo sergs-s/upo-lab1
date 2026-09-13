@@ -64,7 +64,44 @@ public class TeacherPanel extends javax.swing.JPanel {
                 + "список прокручивается вниз.</html>");
         cmbMode.setModel(new DefaultComboBoxModel<Object>(Processor.Mode.values()));
         cmbMode.setSelectedItem(Settings.errorMode());
+        cmbAnchorC.setModel(new DefaultComboBoxModel<Object>(AnchorC.values()));
+        cmbAnchorC.setSelectedItem(Settings.anchorMiddleInItemC()
+                ? AnchorC.MIDDLE : AnchorC.START);
+        cmbAnchorC.setToolTipText("Куда ставится момент привязки M0 в пункте в), "
+                + "где меняется объём выборки N; при запуске берётся из "
+                + "настроечного файла (настройка item.c.anchor)");
         lblCount.setText(" ");
+    }
+
+    /**
+     * Куда ставится момент привязки в пункте в) при автоматическом расчёте.
+     *
+     * В этом пункте меняется объём выборки N, а момент привязки M0 числом
+     * не закреплён: по руководству к работе он переносится в середину
+     * выборки и меняется вместе с N. Привязка к началу интервала усреднения
+     * (M0 = 1) оставлена для сопоставления с прежней программой. Значение
+     * при запуске берётся из настройки item.c.anchor (см. Settings).
+     */
+    private enum AnchorC {
+
+        MIDDLE("к середине выборки (по руководству)"),
+        START("к началу интервала усреднения, M0 = 1");
+
+        private final String title;
+
+        AnchorC(String title) {
+            this.title = title;
+        }
+
+        @Override
+        public String toString() {
+            return title;
+        }
+    }
+
+    /** Выбранная в списке привязка в пункте в): true – к середине выборки. */
+    private boolean anchorMiddleInC() {
+        return cmbAnchorC.getSelectedItem() != AnchorC.START;
     }
 
     /** Вызывается при каждом показе экрана. */
@@ -87,7 +124,7 @@ public class TeacherPanel extends javax.swing.JPanel {
         List<Row> rows = new ArrayList<>();
         for (Notebook.Item item : Notebook.Item.values()) {
             for (double value : item.getDefaults()) {
-                InputData d = item.apply(base, value, chosen);
+                InputData d = item.apply(base, value, chosen, anchorMiddleInC());
                 List<ErrorRow> table1;
                 try {
                     table1 = new Processor(d).setMode(mode).table();
@@ -103,7 +140,8 @@ public class TeacherPanel extends javax.swing.JPanel {
         owner.setInputData(base);
         scrTable.setViewportView(buildGroupedView(rows));
         lblCount.setText("Строк: " + rows.size()
-                + ", динамическая ошибка – " + mode);
+                + ", динамическая ошибка – " + mode
+                + ", привязка в пункте в) – " + cmbAnchorC.getSelectedItem());
     }
 
     /**
@@ -139,8 +177,9 @@ public class TeacherPanel extends javax.swing.JPanel {
                     .append(", параметр ").append(first.item.getParameter())
                     .append(" = ").append(Model.num(first.value));
             if (first.item == Notebook.Item.C) {
-                // здесь М0 закреплён по заданию, но показан явно, а не
-                // подразумевается постоянным – см. Row.anchor
+                // в этом пункте привязка не закреплена: по заданию она
+                // переносится в середину выборки и меняется вместе с N,
+                // поэтому показывается явно – см. Row.anchor
                 headerText.append(", M0 = ").append(first.anchor);
             }
             javax.swing.JLabel header = new javax.swing.JLabel(headerText.toString());
@@ -232,7 +271,7 @@ public class TeacherPanel extends javax.swing.JPanel {
         // что программа занята, а не зависла
         setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.WAIT_CURSOR));
         try {
-            SummaryFrame.show(this, base, mode);
+            SummaryFrame.show(this, base, mode, anchorMiddleInC());
         } finally {
             setCursor(java.awt.Cursor.getDefaultCursor());
         }
@@ -291,11 +330,10 @@ public class TeacherPanel extends javax.swing.JPanel {
 
         /**
          * Момент привязки M0, фактически использованный при расчёте этой
-         * строки. В пункте в (объём выборки N) он по заданию закреплён
-         * (см. {@link Notebook.Item#apply}), но если привязку когда-нибудь
-         * сделают зависящей от N (например, «в середину выборки»), M0 будет
-         * меняться вместе с N – поэтому в заголовке группы он показывается
-         * явно, а не подразумевается постоянным.
+         * строки. В пункте в (объём выборки N) он по заданию переносится
+         * в середину выборки (см. {@link Notebook.Item#apply}) и меняется
+         * вместе с N – поэтому в заголовке группы он показывается явно,
+         * а не подразумевается постоянным.
          */
         final int anchor;
 
@@ -383,6 +421,8 @@ public class TeacherPanel extends javax.swing.JPanel {
         cmbVariant = new javax.swing.JComboBox();
         lblMode = new javax.swing.JLabel();
         cmbMode = new javax.swing.JComboBox();
+        lblAnchorC = new javax.swing.JLabel();
+        cmbAnchorC = new javax.swing.JComboBox();
         btnCompute = new javax.swing.JButton();
         btnCharts = new javax.swing.JButton();
         btnSave = new javax.swing.JButton();
@@ -395,6 +435,8 @@ public class TeacherPanel extends javax.swing.JPanel {
         lblVariant.setText("Вариант");
 
         lblMode.setText("Динамическая ошибка");
+
+        lblAnchorC.setText("Привязка в пункте в)");
 
         btnCompute.setText("Рассчитать все пункты");
         btnCompute.addActionListener(new java.awt.event.ActionListener() {
@@ -451,6 +493,10 @@ public class TeacherPanel extends javax.swing.JPanel {
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(cmbMode, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addGroup(layout.createSequentialGroup()
+                        .addComponent(lblAnchorC, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(cmbAnchorC, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(layout.createSequentialGroup()
                         .addGap(0, 0, Short.MAX_VALUE)
                         .addComponent(btnCompute, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -479,6 +525,10 @@ public class TeacherPanel extends javax.swing.JPanel {
                     .addComponent(cmbMode))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(lblAnchorC)
+                    .addComponent(cmbAnchorC))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(btnCompute)
                     .addComponent(btnCharts)
                     .addComponent(btnSave))
@@ -501,8 +551,10 @@ public class TeacherPanel extends javax.swing.JPanel {
     private javax.swing.JButton btnCompute;
     private javax.swing.JButton btnInput;
     private javax.swing.JButton btnSave;
+    private javax.swing.JComboBox cmbAnchorC;
     private javax.swing.JComboBox cmbMode;
     private javax.swing.JComboBox cmbVariant;
+    private javax.swing.JLabel lblAnchorC;
     private javax.swing.JLabel lblCount;
     private javax.swing.JLabel lblInfo;
     private javax.swing.JLabel lblMode;

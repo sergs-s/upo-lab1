@@ -75,7 +75,7 @@ public final class Report {
             Notebook.Page page = notebook.page(item);
             doc.heading(number + ". Пункт " + item.getLetter() + ": влияние параметра "
                     + item.getParameter() + " (" + item.getParameterTitle() + ")", 2);
-            doc.paragraph("Условия: " + item.fixedDescription(notebook.getChosenDegree())
+            doc.paragraph("Условия: " + page.conditions(item, notebook.getChosenDegree())
                     + ". Числа сняты из строки " + page.getSourceRow()
                     + " таблицы результатов.");
 

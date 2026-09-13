@@ -119,7 +119,8 @@ public final class Settings {
     /** Настройки, по которым узнаётся настроечный файл этой программы. */
     private static final String[] KNOWN_KEYS = {
         "teacher.password", "error.mode", "window.fullscreen",
-        "test.enabled", "notebook.transfer", "noise.montecarlo", "noise.trials"
+        "test.enabled", "notebook.transfer", "noise.montecarlo", "noise.trials",
+        "item.c.anchor"
     };
 
     /** Значение настройки или заданное значение по умолчанию. */
@@ -153,6 +154,30 @@ public final class Settings {
             return ru.vka.upo.core.Processor.Mode.AVERAGED;
         }
         return ru.vka.upo.core.Processor.Mode.ANCHOR;
+    }
+
+    /**
+     * Куда ставится момент привязки в пункте в) при автоматическом расчёте
+     * в режиме преподавателя, заданный настройкой item.c.anchor.
+     *
+     * В пункте в) меняется объём выборки N, а момент привязки M0 числом
+     * не закреплён. Допустимые значения настройки:
+     *
+     *   middle – M0 переносится в середину выборки и меняется вместе с N
+     *            (значение по умолчанию, как предписывает руководство
+     *            к работе: иначе привязка осталась бы на краю
+     *            расширяющегося интервала усреднения);
+     *
+     *   start  – M0 = 1, то есть привязка остаётся в начале интервала
+     *            усреднения при любом N (так считалось в прежней
+     *            программе; предусмотрено для сопоставления с ней).
+     *
+     * При незнакомом значении принимается middle. На работу обучающегося
+     * настройка не влияет: режим обработки он задаёт вручную сам.
+     */
+    public static boolean anchorMiddleInItemC() {
+        String v = get("item.c.anchor", "middle").trim().toLowerCase();
+        return !(v.startsWith("start") || v.startsWith("нач") || v.equals("1"));
     }
 
     /**

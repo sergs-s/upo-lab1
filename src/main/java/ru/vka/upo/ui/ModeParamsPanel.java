@@ -1,0 +1,305 @@
+package ru.vka.upo.ui;
+
+import java.util.Locale;
+import javax.swing.JButton;
+import javax.swing.SpinnerNumberModel;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+import ru.vka.upo.model.InputData;
+
+/**
+ * Панель изменения параметров режима обработки: степень полинома, объём
+ * выборки, шаг измерений и момент привязки, а под ними длительность
+ * интервала усреднения, которая пересчитывается при каждом изменении.
+ *
+ * Сама панель ничего не знает о том, где она показана: окно, в котором
+ * она лежит, закрывается через {@link #setOnFinish(Runnable)}. Показывает
+ * её диалог {@link ModeParamsDialog}, вызываемый с экрана результатов
+ * кнопкой «Параметры режима обработки», чтобы не гонять обучающегося
+ * между экранами ради одной цифры.
+ *
+ * Траектория и условия измерений здесь не показываются и не меняются –
+ * для них по-прежнему служит экран ввода данных.
+ */
+public class ModeParamsPanel extends javax.swing.JPanel {
+
+    private static final long serialVersionUID = 1L;
+
+    private InputData base;
+    private InputData result;
+    private Runnable onFinish;
+
+    public ModeParamsPanel() {
+        initComponents();
+        customize();
+    }
+
+    private void customize() {
+        spnDegree.setModel(new SpinnerNumberModel(2, 0, 12, 1));
+        spnSample.setModel(new SpinnerNumberModel(49, 2, 999, 1));
+        spnAnchor.setModel(new SpinnerNumberModel(25, 1, 999, 1));
+
+        ChangeListener cl = new ChangeListener() {
+            @Override
+            public void stateChanged(ChangeEvent e) {
+                updateAveraging();
+            }
+        };
+        spnDegree.addChangeListener(cl);
+        spnSample.addChangeListener(cl);
+        spnAnchor.addChangeListener(cl);
+        txtStep.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                updateAveraging();
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                updateAveraging();
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                updateAveraging();
+            }
+        });
+    }
+
+    /** Заполняет поля параметрами режима, действующими сейчас в расчёте. */
+    public void setBase(InputData base) {
+        this.base = base;
+        this.result = null;
+        spnDegree.setValue(base.getDegree());
+        spnSample.setValue(base.getSampleSize());
+        txtStep.setText(num(base.getStep()));
+        spnAnchor.setValue(base.getAnchor());
+        updateAveraging();
+    }
+
+    /**
+     * Копия исходных данных с заданными параметрами режима обработки или
+     * null, если работа с панелью закончена кнопкой «Отмена».
+     */
+    public InputData getResult() {
+        return result;
+    }
+
+    /** Что сделать, когда нажата «ОК» или «Отмена»: обычно закрыть окно. */
+    public void setOnFinish(Runnable onFinish) {
+        this.onFinish = onFinish;
+    }
+
+    /** Кнопка, срабатывающая по клавише «Ввод». */
+    public JButton getOkButton() {
+        return btnOk;
+    }
+
+    private void updateAveraging() {
+        if (base == null) {
+            return;
+        }
+        try {
+            InputData d = collect();
+            double avg = d.averagingInterval();
+            lblAveragingValue.setText(Double.isNaN(avg) ? "–" : num(round(avg, 4)) + " с");
+        } catch (RuntimeException e) {
+            lblAveragingValue.setText("–");
+        }
+    }
+
+    /** Копия исходных данных с новыми параметрами режима обработки. */
+    private InputData collect() {
+        InputData d = base.clone();
+        d.setDegree((Integer) spnDegree.getValue());
+        d.setSampleSize((Integer) spnSample.getValue());
+        String s = txtStep.getText() == null ? "" : txtStep.getText().trim().replace(',', '.');
+        try {
+            d.setStep(Double.parseDouble(s));
+        } catch (NumberFormatException e) {
+            d.setStep(base.getStep());
+        }
+        d.setAnchor((Integer) spnAnchor.getValue());
+        return d;
+    }
+
+    private static String num(double v) {
+        if (Double.isNaN(v)) {
+            return "";
+        }
+        if (v == Math.rint(v) && Math.abs(v) < 1e9) {
+            return String.valueOf((long) v);
+        }
+        return String.format(Locale.ROOT, "%s", v);
+    }
+
+    private static double round(double v, int digits) {
+        double k = Math.pow(10, digits);
+        return Math.rint(v * k) / k;
+    }
+
+    private void finish() {
+        if (onFinish != null) {
+            onFinish.run();
+        }
+    }
+
+    /**
+     * This method is called from within the constructor to initialize the form.
+     * WARNING: Do NOT modify this code. The content of this method is always
+     * regenerated by the Form Editor.
+     */
+    @SuppressWarnings("unchecked")
+    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
+    private void initComponents() {
+
+        lblDegree = new javax.swing.JLabel();
+        spnDegree = new javax.swing.JSpinner();
+        lblSample = new javax.swing.JLabel();
+        spnSample = new javax.swing.JSpinner();
+        lblStep = new javax.swing.JLabel();
+        txtStep = new javax.swing.JTextField();
+        lblStepUnit = new javax.swing.JLabel();
+        lblAnchor = new javax.swing.JLabel();
+        spnAnchor = new javax.swing.JSpinner();
+        btnAnchorMiddle = new javax.swing.JButton();
+        lblAveraging = new javax.swing.JLabel();
+        lblAveragingValue = new javax.swing.JLabel();
+        btnOk = new javax.swing.JButton();
+        btnCancel = new javax.swing.JButton();
+
+        lblDegree.setText("Степень полинома m");
+
+        lblSample.setText("Объём выборки N");
+
+        lblStep.setText("Шаг измерений T");
+
+        lblStepUnit.setText("с");
+
+        lblAnchor.setText("Момент привязки M0");
+
+        btnAnchorMiddle.setText("в середину");
+        btnAnchorMiddle.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnAnchorMiddleActionPerformed(evt);
+            }
+        });
+
+        lblAveraging.setText("Интервал усреднения");
+
+        lblAveragingValue.setText("–");
+
+        btnOk.setText("ОК");
+        btnOk.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnOkActionPerformed(evt);
+            }
+        });
+
+        btnCancel.setText("Отмена");
+        btnCancel.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnCancelActionPerformed(evt);
+            }
+        });
+
+        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
+        this.setLayout(layout);
+        layout.setHorizontalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(layout.createSequentialGroup()
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(lblDegree, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(lblSample, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(lblStep, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(lblAnchor, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(lblAveraging, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(spnDegree, javax.swing.GroupLayout.PREFERRED_SIZE, 120, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(spnSample, javax.swing.GroupLayout.PREFERRED_SIZE, 120, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(txtStep, javax.swing.GroupLayout.PREFERRED_SIZE, 120, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(spnAnchor, javax.swing.GroupLayout.PREFERRED_SIZE, 120, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(lblAveragingValue, javax.swing.GroupLayout.PREFERRED_SIZE, 120, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(lblStepUnit, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(btnAnchorMiddle, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                    .addGroup(layout.createSequentialGroup()
+                        .addGap(0, 0, Short.MAX_VALUE)
+                        .addComponent(btnOk, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(btnCancel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addContainerGap())
+        );
+        layout.setVerticalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(lblDegree)
+                    .addComponent(spnDegree))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(lblSample)
+                    .addComponent(spnSample))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(lblStep)
+                    .addComponent(txtStep)
+                    .addComponent(lblStepUnit))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(lblAnchor)
+                    .addComponent(spnAnchor)
+                    .addComponent(btnAnchorMiddle))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(lblAveraging)
+                    .addComponent(lblAveragingValue))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(btnOk)
+                    .addComponent(btnCancel))
+                .addContainerGap())
+        );
+    }// </editor-fold>//GEN-END:initComponents
+
+    private void btnAnchorMiddleActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAnchorMiddleActionPerformed
+        int n = (Integer) spnSample.getValue();
+        spnAnchor.setValue((n + 1) / 2);
+        updateAveraging();
+    }//GEN-LAST:event_btnAnchorMiddleActionPerformed
+
+    private void btnOkActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnOkActionPerformed
+        result = collect();
+        finish();
+    }//GEN-LAST:event_btnOkActionPerformed
+
+    private void btnCancelActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCancelActionPerformed
+        result = null;
+        finish();
+    }//GEN-LAST:event_btnCancelActionPerformed
+
+    // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton btnAnchorMiddle;
+    private javax.swing.JButton btnCancel;
+    private javax.swing.JButton btnOk;
+    private javax.swing.JLabel lblAnchor;
+    private javax.swing.JLabel lblAveraging;
+    private javax.swing.JLabel lblAveragingValue;
+    private javax.swing.JLabel lblDegree;
+    private javax.swing.JLabel lblSample;
+    private javax.swing.JLabel lblStep;
+    private javax.swing.JLabel lblStepUnit;
+    private javax.swing.JSpinner spnAnchor;
+    private javax.swing.JSpinner spnDegree;
+    private javax.swing.JSpinner spnSample;
+    private javax.swing.JTextField txtStep;
+    // End of variables declaration//GEN-END:variables
+}

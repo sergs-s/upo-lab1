@@ -297,6 +297,9 @@ public class ResultsPanel extends javax.swing.JPanel {
         target.setRangeRandom(r.getRangeRandom());
         target.setRangeTotal(r.getRangeTotal());
         target.setSuspicious(false);
+        // вместе с числами запоминается режим, при котором они получены:
+        // именно он пойдёт в отчёт, а не предписанный пунктом задания
+        target.setMode(data);
         page.setSourceRow(line);
         owner.setStatus(String.format(Locale.ROOT,
                 "В тетрадь, пункт %s: при %s = %s занесены ERD = %s, ERS = %s, ER = %s "
@@ -434,20 +437,40 @@ public class ResultsPanel extends javax.swing.JPanel {
 
         lblMode = new javax.swing.JLabel();
         pnlModeButtons = new javax.swing.JPanel();
+        btnModeParams = new javax.swing.JButton();
         scrTable = new javax.swing.JScrollPane();
-        pnlPictures = new javax.swing.JPanel();
         lblWrite = new javax.swing.JLabel();
+        pnlPictures = new javax.swing.JPanel();
         lblCaption = new javax.swing.JLabel();
         lblNoise = new javax.swing.JLabel();
         pnlNoiseButtons = new javax.swing.JPanel();
-        btnBack = new javax.swing.JButton();
-        btnModeParams = new javax.swing.JButton();
         btnNoise = new javax.swing.JButton();
+        btnBack = new javax.swing.JButton();
         btnHelp = new javax.swing.JButton();
         btnTask = new javax.swing.JButton();
         btnNotebook = new javax.swing.JButton();
 
         lblMode.setText("Режим обработки");
+
+        btnModeParams.setText("Параметры режима обработки");
+        btnModeParams.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnModeParamsActionPerformed(evt);
+            }
+        });
+
+        javax.swing.GroupLayout pnlModeButtonsLayout = new javax.swing.GroupLayout(pnlModeButtons);
+        pnlModeButtons.setLayout(pnlModeButtonsLayout);
+        pnlModeButtonsLayout.setHorizontalGroup(
+            pnlModeButtonsLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(pnlModeButtonsLayout.createSequentialGroup()
+                .addGap(0, 0, Short.MAX_VALUE)
+                .addComponent(btnModeParams, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+        );
+        pnlModeButtonsLayout.setVerticalGroup(
+            pnlModeButtonsLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addComponent(btnModeParams, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+        );
 
         javax.swing.GroupLayout pnlPicturesLayout = new javax.swing.GroupLayout(pnlPictures);
         pnlPictures.setLayout(pnlPicturesLayout);
@@ -473,29 +496,25 @@ public class ResultsPanel extends javax.swing.JPanel {
             }
         });
 
-        btnModeParams.setText("Параметры режима обработки");
-        btnModeParams.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnModeParamsActionPerformed(evt);
-            }
-        });
-        // кнопка относится к таблице и режиму обработки, а не к навигации
-        // по программе, поэтому стоит прямо над таблицей, а не в общем
-        // ряду кнопок внизу экрана
-        pnlModeButtons.setLayout(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT, 0, 0));
-        pnlModeButtons.add(btnModeParams);
-
         btnNoise.setText("Другая реализация шума");
         btnNoise.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnNoiseActionPerformed(evt);
             }
         });
-        // кнопка относится к рисункам и тексту о текущей реализации шума
-        // (lblNoise как раз предлагает её нажать), поэтому стоит рядом
-        // с этим текстом, а не в общем ряду кнопок внизу экрана
-        pnlNoiseButtons.setLayout(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT, 0, 0));
-        pnlNoiseButtons.add(btnNoise);
+
+        javax.swing.GroupLayout pnlNoiseButtonsLayout = new javax.swing.GroupLayout(pnlNoiseButtons);
+        pnlNoiseButtons.setLayout(pnlNoiseButtonsLayout);
+        pnlNoiseButtonsLayout.setHorizontalGroup(
+            pnlNoiseButtonsLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(pnlNoiseButtonsLayout.createSequentialGroup()
+                .addGap(0, 0, Short.MAX_VALUE)
+                .addComponent(btnNoise, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+        );
+        pnlNoiseButtonsLayout.setVerticalGroup(
+            pnlNoiseButtonsLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addComponent(btnNoise, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+        );
 
         btnHelp.setText("Сведения из теории");
         btnHelp.addActionListener(new java.awt.event.ActionListener() {

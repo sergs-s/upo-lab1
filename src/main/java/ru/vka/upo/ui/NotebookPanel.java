@@ -45,11 +45,20 @@ public class NotebookPanel extends javax.swing.JPanel {
 
     private final MainFrame owner;
     private final ChartView chart = new ChartView();
+    /**
+     * Масштаб оси ошибок: по умолчанию логарифмический, так как ошибки
+     * различаются на несколько порядков. Переключается кнопкой под графиком.
+     */
+    private boolean logY = true;
     private final Model model = new Model();
     private JTable table;
 
     public NotebookPanel(MainFrame owner) {
         this.owner = owner;
+        // модель таблицы статическая, до полей панели ей не дотянуться:
+        // ссылка на главное окно нужна ей, чтобы вместе с занесённым числом
+        // запомнить режим обработки, при котором оно получено
+        model.setOwner(owner);
         initComponents();
         customize();
     }
@@ -171,7 +180,7 @@ public class NotebookPanel extends javax.swing.JPanel {
         int suspicious = check(it, p);
 
         chart.clear();
-        chart.setAxes(it.getParameter(), "ошибка, м", it.isLogParameter(), true);
+        chart.setAxes(it.getParameter(), "ошибка, м", it.isLogParameter(), logY);
         ChartView.Series sd = new ChartView.Series("динамическая ERD", DYNAMIC);
         ChartView.Series sr = new ChartView.Series("случайная ERS", RANDOM);
         ChartView.Series st = new ChartView.Series("полная ER", TOTAL);
@@ -211,7 +220,12 @@ public class NotebookPanel extends javax.swing.JPanel {
                 continue;
             }
             try {
-                InputData d = it.apply(base, l.getParameter(), owner.getNotebook().getChosenDegree());
+                // сверяем с тем режимом, при котором числа получены;
+                // если он неизвестен – с режимом, предписанным пунктом
+                InputData d = l.hasMode()
+                        ? l.toInputData(base)
+                        : it.apply(base, l.getParameter(),
+                                owner.getNotebook().getChosenDegree());
                 List<ErrorRow> rows = new Processor(d).table();
                 ErrorRow r = rows.get(row - 1);
                 boolean ok = close(l.getRangeDynamic(), r.getRangeDynamic())
@@ -250,12 +264,26 @@ public class NotebookPanel extends javax.swing.JPanel {
         plot();
     }
 
+    /**
+     * Переключение масштаба оси ошибок. По умолчанию масштаб
+     * логарифмический: динамическая ошибка меняется на несколько порядков,
+     * и в линейном масштабе её ход у малых значений неразличим.
+     */
+    private void btnScaleActionPerformed(java.awt.event.ActionEvent evt) {
+        logY = !btnScale.isSelected();
+        btnScale.setText(btnScale.isSelected()
+                ? "логарифмический масштаб" : "линейный масштаб");
+        chart.setLogY(logY);
+        chart.repaint();
+    }
+
     private void btnClearActionPerformed(java.awt.event.ActionEvent evt) {
         for (Notebook.Line l : page().getLines()) {
             l.setRangeDynamic(null);
             l.setRangeRandom(null);
             l.setRangeTotal(null);
             l.setSuspicious(false);
+            l.setMode(null);
         }
         model.fireTableDataChanged();
         chart.clear();
@@ -365,6 +393,12 @@ public class NotebookPanel extends javax.swing.JPanel {
 
         private Notebook.Item item = Notebook.Item.A;
         private Notebook.Page page;
+        /** Главное окно: у него спрашивается текущий режим обработки. */
+        private MainFrame owner;
+
+        void setOwner(MainFrame owner) {
+            this.owner = owner;
+        }
 
         void setPage(Notebook.Item item, Notebook.Page page) {
             this.item = item;
@@ -433,6 +467,12 @@ public class NotebookPanel extends javax.swing.JPanel {
                 case 2: l.setRangeRandom(v); break;
                 default: l.setRangeTotal(v); break;
             }
+            if (c > 0 && v != null && owner != null) {
+                // числа переписываются сразу после расчёта: запоминаем режим,
+                // при котором они получены, чтобы в отчёт пошло ровно то,
+                // что задавал обучающийся
+                l.setMode(owner.getInputData());
+            }
             l.setSuspicious(false);
             fireTableRowsUpdated(r, r);
         }
@@ -487,10 +527,13 @@ public class NotebookPanel extends javax.swing.JPanel {
         spnSourceRow = new javax.swing.JSpinner();
         lblDegree = new javax.swing.JLabel();
         spnDegree = new javax.swing.JSpinner();
-        btnPlot = new javax.swing.JButton();
-        btnClear = new javax.swing.JButton();
         scrTable = new javax.swing.JScrollPane();
+        pnlTableButtons = new javax.swing.JPanel();
+        btnClear = new javax.swing.JButton();
         pnlChart = new javax.swing.JPanel();
+        pnlChartButtons = new javax.swing.JPanel();
+        btnScale = new javax.swing.JToggleButton();
+        btnPlot = new javax.swing.JButton();
         scrConclusion = new javax.swing.JScrollPane();
         txtConclusion = new javax.swing.JTextArea();
         lblCheck = new javax.swing.JLabel();
@@ -513,19 +556,25 @@ public class NotebookPanel extends javax.swing.JPanel {
 
         lblDegree.setText("Степень m, выбранная в пункте а");
 
-        btnPlot.setText("Построить график");
-        btnPlot.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnPlotActionPerformed(evt);
-            }
-        });
-
         btnClear.setText("Стереть числа пункта");
         btnClear.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnClearActionPerformed(evt);
             }
         });
+
+        javax.swing.GroupLayout pnlTableButtonsLayout = new javax.swing.GroupLayout(pnlTableButtons);
+        pnlTableButtons.setLayout(pnlTableButtonsLayout);
+        pnlTableButtonsLayout.setHorizontalGroup(
+            pnlTableButtonsLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(pnlTableButtonsLayout.createSequentialGroup()
+                .addComponent(btnClear, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(0, 0, Short.MAX_VALUE))
+        );
+        pnlTableButtonsLayout.setVerticalGroup(
+            pnlTableButtonsLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addComponent(btnClear, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+        );
 
         javax.swing.GroupLayout pnlChartLayout = new javax.swing.GroupLayout(pnlChart);
         pnlChart.setLayout(pnlChartLayout);
@@ -536,6 +585,39 @@ public class NotebookPanel extends javax.swing.JPanel {
         pnlChartLayout.setVerticalGroup(
             pnlChartLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGap(0, 280, Short.MAX_VALUE)
+        );
+
+        btnScale.setText("линейный масштаб");
+        btnScale.setToolTipText("Переключить масштаб оси ошибок: логарифмический / линейный");
+        btnScale.setFocusable(false);
+        btnScale.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnScaleActionPerformed(evt);
+            }
+        });
+
+        btnPlot.setText("Построить график");
+        btnPlot.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnPlotActionPerformed(evt);
+            }
+        });
+
+        javax.swing.GroupLayout pnlChartButtonsLayout = new javax.swing.GroupLayout(pnlChartButtons);
+        pnlChartButtons.setLayout(pnlChartButtonsLayout);
+        pnlChartButtonsLayout.setHorizontalGroup(
+            pnlChartButtonsLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(pnlChartButtonsLayout.createSequentialGroup()
+                .addGap(0, 0, Short.MAX_VALUE)
+                .addComponent(btnScale, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(btnPlot, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+        );
+        pnlChartButtonsLayout.setVerticalGroup(
+            pnlChartButtonsLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(pnlChartButtonsLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                .addComponent(btnScale)
+                .addComponent(btnPlot))
         );
 
         txtConclusion.setLineWrap(true);
@@ -595,9 +677,13 @@ public class NotebookPanel extends javax.swing.JPanel {
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(spnDegree, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addGroup(layout.createSequentialGroup()
-                        .addComponent(scrTable, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(scrTable, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(pnlTableButtons, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(pnlChart, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(pnlChart, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(pnlChartButtons, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
                     .addComponent(scrConclusion, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(lblCheck, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addGroup(layout.createSequentialGroup()
@@ -607,10 +693,6 @@ public class NotebookPanel extends javax.swing.JPanel {
                         .addComponent(btnTask, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(btnHelp, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(btnClear, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(btnPlot, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(btnReport, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addContainerGap())
@@ -632,8 +714,14 @@ public class NotebookPanel extends javax.swing.JPanel {
                     .addComponent(spnDegree))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(scrTable, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(pnlChart, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(scrTable, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(pnlTableButtons, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(pnlChart, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(pnlChartButtons, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(scrConclusion, javax.swing.GroupLayout.PREFERRED_SIZE, 80, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -643,8 +731,6 @@ public class NotebookPanel extends javax.swing.JPanel {
                     .addComponent(btnBack)
                     .addComponent(btnTask)
                     .addComponent(btnHelp)
-                    .addComponent(btnClear)
-                    .addComponent(btnPlot)
                     .addComponent(btnReport))
                 .addContainerGap())
         );
@@ -664,10 +750,13 @@ public class NotebookPanel extends javax.swing.JPanel {
     private javax.swing.JLabel lblItem;
     private javax.swing.JLabel lblSource;
     private javax.swing.JPanel pnlChart;
+    private javax.swing.JPanel pnlChartButtons;
+    private javax.swing.JPanel pnlTableButtons;
     private javax.swing.JScrollPane scrConclusion;
     private javax.swing.JScrollPane scrTable;
     private javax.swing.JSpinner spnDegree;
     private javax.swing.JSpinner spnSourceRow;
     private javax.swing.JTextArea txtConclusion;
+    private javax.swing.JToggleButton btnScale;
     // End of variables declaration//GEN-END:variables
 }

@@ -132,16 +132,17 @@ public class SummaryFrame extends JFrame {
      * открыто, второй раз не создаётся – в уже открытом окне просто
      * обновляются графики и таблицы по переданным данным.
      */
-    public static void show(Component parent, InputData base, Processor.Mode mode) {
+    public static void show(Component parent, InputData base, Processor.Mode mode,
+            boolean middleInC) {
         Window owner = SwingUtilities.getWindowAncestor(parent);
         if (instance != null && instance.isDisplayable()) {
-            instance.updateData(base, mode);
+            instance.updateData(base, mode, middleInC);
             instance.bringToFront();
             return;
         }
         final Window ownerFinal = owner;
         instance = new SummaryFrame(owner);
-        instance.updateData(base, mode);
+        instance.updateData(base, mode, middleInC);
         instance.addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosed(WindowEvent e) {
@@ -180,12 +181,12 @@ public class SummaryFrame extends JFrame {
     }
 
     /** Пересчитывает и перерисовывает содержимое окна по новым данным. */
-    private void updateData(InputData base, Processor.Mode mode) {
-        int degree = bestDegree(base, mode);
+    private void updateData(InputData base, Processor.Mode mode, boolean middleInC) {
+        int degree = bestDegree(base, mode, middleInC);
 
         grid.removeAll();
         for (Notebook.Item item : Notebook.Item.values()) {
-            grid.add(page(base, mode, item, degree));
+            grid.add(page(base, mode, item, degree, middleInC));
         }
 
         head.setText("<html>Числа взяты из первой строки таблицы "
@@ -193,6 +194,9 @@ public class SummaryFrame extends JFrame {
                 + "Степень полинома для пунктов б, в и г определена по пункту а "
                 + "по наименьшей полной ошибке дальности: <b>m = " + degree
                 + "</b>. Способ вычисления динамической ошибки: " + mode
+                + ". В пункте в) момент привязки "
+                + (middleInC ? "переносится в середину выборки"
+                        : "остаётся в начале интервала усреднения (M0 = 1)")
                 + ".</html>");
 
         grid.revalidate();
@@ -211,11 +215,12 @@ public class SummaryFrame extends JFrame {
      * значениях из задания не бывает), остаётся степень 2 – та, что задана
      * в исходных данных по умолчанию.
      */
-    private static int bestDegree(InputData base, Processor.Mode mode) {
+    private static int bestDegree(InputData base, Processor.Mode mode,
+            boolean middleInC) {
         int best = 2;
         double least = Double.POSITIVE_INFINITY;
         for (double value : Notebook.Item.A.getDefaults()) {
-            ErrorRow row = compute(base, mode, Notebook.Item.A, value, 2);
+            ErrorRow row = compute(base, mode, Notebook.Item.A, value, 2, middleInC);
             if (row == null) {
                 continue;
             }
@@ -234,9 +239,9 @@ public class SummaryFrame extends JFrame {
      * (например, объём выборки меньше числа коэффициентов полинома).
      */
     private static ErrorRow compute(InputData base, Processor.Mode mode,
-            Notebook.Item item, double value, int degree) {
+            Notebook.Item item, double value, int degree, boolean middleInC) {
         try {
-            InputData d = item.apply(base, value, degree);
+            InputData d = item.apply(base, value, degree, middleInC);
             List<ErrorRow> rows = new Processor(d).setMode(mode).table();
             return rows.size() < SOURCE_ROW ? null : rows.get(SOURCE_ROW - 1);
         } catch (RuntimeException e) {
@@ -246,10 +251,10 @@ public class SummaryFrame extends JFrame {
 
     /** График и таблица одного пункта задания. */
     private JPanel page(InputData base, Processor.Mode mode, Notebook.Item item,
-            int degree) {
+            int degree, boolean middleInC) {
         List<double[]> data = new ArrayList<double[]>();
         for (double value : item.getDefaults()) {
-            ErrorRow row = compute(base, mode, item, value, degree);
+            ErrorRow row = compute(base, mode, item, value, degree, middleInC);
             if (row != null) {
                 data.add(new double[] {value, row.getRangeDynamic(),
                     row.getRangeRandom(), row.getRangeTotal()});
