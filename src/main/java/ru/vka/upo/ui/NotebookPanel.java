@@ -50,6 +50,12 @@ public class NotebookPanel extends javax.swing.JPanel {
      * различаются на несколько порядков. Переключается кнопкой под графиком.
      */
     private boolean logY = true;
+    /**
+     * При измерении и дальности, и скорости: на графике показаны ошибки
+     * скорости (true) или дальности (false). Переключается кнопкой под
+     * графиком; величины с разными единицами на одном поле не совмещаются.
+     */
+    private boolean showSpeed;
     private final Model model = new Model();
     private JTable table;
 
@@ -108,6 +114,27 @@ public class NotebookPanel extends javax.swing.JPanel {
         return owner.getNotebook().page(item());
     }
 
+    /** Измеряемые параметры по исходным данным, действующим в программе. */
+    private InputData.Measured measured() {
+        InputData d = owner.getInputData();
+        return d == null || d.getMeasured() == null
+                ? InputData.Measured.RANGE : d.getMeasured();
+    }
+
+    /** Величины, ошибки которых выписываются в тетрадь. */
+    private List<Notebook.Quantity> quantities() {
+        return Notebook.Quantity.of(measured());
+    }
+
+    /** Величина, ошибки которой показаны на графике. */
+    private Notebook.Quantity shown() {
+        List<Notebook.Quantity> q = quantities();
+        if (q.size() == 1) {
+            return q.get(0);
+        }
+        return showSpeed ? Notebook.Quantity.SPEED : Notebook.Quantity.RANGE;
+    }
+
     /** Вызывается при каждом показе экрана. */
     public void onShown() {
         showItem();
@@ -119,7 +146,11 @@ public class NotebookPanel extends javax.swing.JPanel {
     private void showItem() {
         Notebook.Item it = item();
         Notebook.Page p = page();
-        model.setPage(it, p);
+        // состав столбцов зависит от измеряемых параметров: берётся из
+        // исходных данных, действующих сейчас, и обновляется при каждом
+        // показе экрана, то есть и после смены исходных данных
+        model.setPage(it, p, quantities());
+        btnQuantity.setVisible(quantities().size() > 1);
         int chosen = owner.getNotebook().getChosenDegree();
         lblFixed.setText("<html>Меняется " + it.getParameter() + " – "
                 + it.getParameterTitle() + "; " + it.fixedDescription(chosen)
@@ -129,6 +160,10 @@ public class NotebookPanel extends javax.swing.JPanel {
         lblDegree.setVisible(needDegree);
         spnDegree.setVisible(needDegree);
         spnDegree.setValue(chosen);
+        Notebook.Quantity choice = Notebook.Quantity.forDegreeChoice(measured());
+        lblDegree.setToolTipText("Степень полинома, при которой в пункте а "
+                + "полная ошибка оценивания " + choice.getGenitive() + " "
+                + choice.getTotalName() + " оказалась наименьшей");
         spnSourceRow.setValue(p.getSourceRow());
         txtConclusion.setText(p.getConclusion());
         chart.clear();
@@ -170,7 +205,7 @@ public class NotebookPanel extends javax.swing.JPanel {
         store();
         Notebook.Item it = item();
         Notebook.Page p = page();
-        if (!p.isReady()) {
+        if (!p.isReady(measured(), it, owner.getNotebook().getChosenDegree())) {
             chart.clear();
             chart.setMessage("Чтобы построить график, заполните хотя бы две строки");
             lblCheck.setText("Заполнены не все строки");
@@ -180,21 +215,8 @@ public class NotebookPanel extends javax.swing.JPanel {
         int suspicious = check(it, p);
 
         chart.clear();
-        chart.setAxes(it.getParameter(), "ошибка, м", it.isLogParameter(), logY);
-        ChartView.Series sd = new ChartView.Series("динамическая ERD", DYNAMIC);
-        ChartView.Series sr = new ChartView.Series("случайная ERS", RANDOM);
-        ChartView.Series st = new ChartView.Series("полная ER", TOTAL);
-        for (Notebook.Line l : p.getLines()) {
-            if (!l.isFilled()) {
-                continue;
-            }
-            sd.add(l.getParameter(), l.getRangeDynamic(), l.isSuspicious());
-            sr.add(l.getParameter(), l.getRangeRandom(), l.isSuspicious());
-            st.add(l.getParameter(), l.getRangeTotal(), l.isSuspicious());
-        }
-        chart.add(sd);
-        chart.add(sr);
-        chart.add(st);
+        chart.setAxes(it.getParameter(), shown().axisTitle(), it.isLogParameter(), logY);
+        ChartView.Series st = fill(chart, it, p, shown(), true);
         chart.markMinimum(st);
         showPicked();
         model.fireTableDataChanged();
@@ -213,10 +235,19 @@ public class NotebookPanel extends javax.swing.JPanel {
     private int check(Notebook.Item it, Notebook.Page p) {
         InputData base = owner.getInputData();
         int row = Math.max(1, Math.min(p.getSourceRow(), Processor.ROWS));
+        int chosen = owner.getNotebook().getChosenDegree();
         int bad = 0;
         for (Notebook.Line l : p.getLines()) {
             l.setSuspicious(false);
-            if (!l.isFilled()) {
+            // сверяются те величины, числа которых выписаны полностью; ошибки
+            // скорости при m = 0 не определены и не сверяются
+            List<Notebook.Quantity> entered = new java.util.ArrayList<Notebook.Quantity>();
+            for (Notebook.Quantity q : quantities()) {
+                if (q.isDefined(l.degree(it, chosen)) && l.isFilled(q)) {
+                    entered.add(q);
+                }
+            }
+            if (entered.isEmpty()) {
                 continue;
             }
             try {
@@ -228,9 +259,17 @@ public class NotebookPanel extends javax.swing.JPanel {
                                 owner.getNotebook().getChosenDegree());
                 List<ErrorRow> rows = new Processor(d).table();
                 ErrorRow r = rows.get(row - 1);
-                boolean ok = close(l.getRangeDynamic(), r.getRangeDynamic())
-                        && close(l.getRangeRandom(), r.getRangeRandom())
-                        && close(l.getRangeTotal(), r.getRangeTotal());
+                boolean ok = true;
+                for (Notebook.Quantity q : entered) {
+                    boolean speed = q == Notebook.Quantity.SPEED;
+                    ok = ok
+                            && close(l.getDynamic(q),
+                                    speed ? r.getSpeedDynamic() : r.getRangeDynamic())
+                            && close(l.getRandom(q),
+                                    speed ? r.getSpeedRandom() : r.getRangeRandom())
+                            && close(l.getTotal(q),
+                                    speed ? r.getSpeedTotal() : r.getRangeTotal());
+                }
                 if (!ok) {
                     l.setSuspicious(true);
                     bad++;
@@ -277,11 +316,50 @@ public class NotebookPanel extends javax.swing.JPanel {
         chart.repaint();
     }
 
+    /**
+     * Переключение графика между ошибками дальности и ошибками скорости.
+     * Кнопка видна только при измерении обоих параметров: величины с разными
+     * единицами на одном поле не совмещаются, поэтому показывается одна
+     * из них. Если график уже можно строить, он перестраивается сразу.
+     */
+    private void btnQuantityActionPerformed(java.awt.event.ActionEvent evt) {
+        showSpeed = btnQuantity.isSelected();
+        btnQuantity.setText(showSpeed ? "ошибки дальности" : "ошибки скорости");
+        if (page().isReady(measured(), item(), owner.getNotebook().getChosenDegree())) {
+            plot();
+        }
+    }
+
+    /**
+     * Наносит на график три кривые заданной величины по заполненным строкам
+     * страницы и возвращает кривую полной ошибки.
+     *
+     * @param marks подсвечивать ли строки, выпадающие из расчёта
+     */
+    private ChartView.Series fill(ChartView c, Notebook.Item it, Notebook.Page p,
+            Notebook.Quantity q, boolean marks) {
+        int chosen = owner.getNotebook().getChosenDegree();
+        ChartView.Series sd = new ChartView.Series("динамическая " + q.getDynamicName(), DYNAMIC);
+        ChartView.Series sr = new ChartView.Series("случайная " + q.getRandomName(), RANDOM);
+        ChartView.Series st = new ChartView.Series("полная " + q.getTotalName(), TOTAL);
+        for (Notebook.Line l : p.getLines()) {
+            if (!q.isDefined(l.degree(it, chosen)) || !l.isFilled(q)) {
+                continue;
+            }
+            boolean bad = marks && l.isSuspicious();
+            sd.add(l.getParameter(), l.getDynamic(q), bad);
+            sr.add(l.getParameter(), l.getRandom(q), bad);
+            st.add(l.getParameter(), l.getTotal(q), bad);
+        }
+        c.add(sd);
+        c.add(sr);
+        c.add(st);
+        return st;
+    }
+
     private void btnClearActionPerformed(java.awt.event.ActionEvent evt) {
         for (Notebook.Line l : page().getLines()) {
-            l.setRangeDynamic(null);
-            l.setRangeRandom(null);
-            l.setRangeTotal(null);
+            l.clearNumbers();
             l.setSuspicious(false);
             l.setMode(null);
         }
@@ -307,7 +385,7 @@ public class NotebookPanel extends javax.swing.JPanel {
     private void btnReportActionPerformed(java.awt.event.ActionEvent evt) {
         store();
         Notebook nb = owner.getNotebook();
-        if (nb.readyCount() == 0) {
+        if (nb.readyCount(measured()) == 0) {
             lblCheck.setText("Отчёт пуст: сначала заполните хотя бы один пункт");
             return;
         }
@@ -319,7 +397,8 @@ public class NotebookPanel extends javax.swing.JPanel {
         }
         try {
             Report.write(chooser.getSelectedFile().toPath(), owner.getStudent(),
-                    owner.getInputData(), nb, charts());
+                    owner.getInputData(), nb, charts(Notebook.Quantity.RANGE),
+                    charts(Notebook.Quantity.SPEED));
             lblCheck.setText("Отчёт сохранён: "
                     + chooser.getSelectedFile().getName());
             owner.setStatus("Отчёт сохранён в файл "
@@ -331,32 +410,27 @@ public class NotebookPanel extends javax.swing.JPanel {
         }
     }
 
-    /** Изображения графиков по всем заполненным пунктам – для отчёта. */
-    private Map<Notebook.Item, BufferedImage> charts() {
+    /**
+     * Изображения графиков заданной величины по всем заполненным пунктам –
+     * для отчёта. Если ошибки этой величины при текущих измеряемых
+     * параметрах не выписываются, возвращается пустой набор.
+     */
+    private Map<Notebook.Item, BufferedImage> charts(Notebook.Quantity q) {
         Map<Notebook.Item, BufferedImage> out = new EnumMap<>(Notebook.Item.class);
+        if (!quantities().contains(q)) {
+            return out;
+        }
+        int chosen = owner.getNotebook().getChosenDegree();
         for (Notebook.Item it : Notebook.Item.values()) {
             Notebook.Page p = owner.getNotebook().page(it);
-            if (!p.isReady()) {
+            if (!p.isReady(measured(), it, chosen)) {
                 continue;
             }
             check(it, p);
             ChartView c = new ChartView();
             c.setFont(getFont());
-            c.setAxes(it.getParameter(), "ошибка, м", it.isLogParameter(), true);
-            ChartView.Series sd = new ChartView.Series("динамическая ERD", DYNAMIC);
-            ChartView.Series sr = new ChartView.Series("случайная ERS", RANDOM);
-            ChartView.Series st = new ChartView.Series("полная ER", TOTAL);
-            for (Notebook.Line l : p.getLines()) {
-                if (!l.isFilled()) {
-                    continue;
-                }
-                sd.add(l.getParameter(), l.getRangeDynamic(), false);
-                sr.add(l.getParameter(), l.getRangeRandom(), false);
-                st.add(l.getParameter(), l.getRangeTotal(), false);
-            }
-            c.add(sd);
-            c.add(sr);
-            c.add(st);
+            c.setAxes(it.getParameter(), q.axisTitle(), it.isLogParameter(), true);
+            fill(c, it, p, q, false);
             out.put(it, c.image(760, 420));
         }
         return out;
@@ -386,13 +460,26 @@ public class NotebookPanel extends javax.swing.JPanel {
         }
     }
 
-    /** Модель таблицы тетради: все ячейки заполняет обучающийся. */
+    /**
+     * Модель таблицы тетради: все ячейки заполняет обучающийся.
+     *
+     * Состав столбцов определяется измеряемыми параметрами: первый столбец –
+     * значение изменяемого параметра, дальше по три столбца на каждую
+     * выписываемую величину (ERD, ERS, ER и/или EVD, EVS, EV). Там, где
+     * ошибка скорости не определена (m = 0), в ячейке стоит «–» и вписать
+     * туда ничего нельзя.
+     */
     private static class Model extends AbstractTableModel {
 
         private static final long serialVersionUID = 1L;
 
+        /** Знак неопределённого значения. */
+        private static final String UNDEFINED = "–";
+
         private Notebook.Item item = Notebook.Item.A;
         private Notebook.Page page;
+        private List<Notebook.Quantity> quantities =
+                Notebook.Quantity.of(InputData.Measured.RANGE);
         /** Главное окно: у него спрашивается текущий режим обработки. */
         private MainFrame owner;
 
@@ -400,15 +487,28 @@ public class NotebookPanel extends javax.swing.JPanel {
             this.owner = owner;
         }
 
-        void setPage(Notebook.Item item, Notebook.Page page) {
+        void setPage(Notebook.Item item, Notebook.Page page,
+                List<Notebook.Quantity> quantities) {
             this.item = item;
             this.page = page;
+            this.quantities = quantities;
             fireTableStructureChanged();
         }
 
         Notebook.Line line(int i) {
             return page == null || i < 0 || i >= page.getLines().size()
                     ? null : page.getLines().get(i);
+        }
+
+        /** Величина, к которой относится столбец c (c ≥ 1). */
+        private Notebook.Quantity quantity(int c) {
+            return quantities.get((c - 1) / 3);
+        }
+
+        /** Определена ли в строке ошибка величины столбца c. */
+        private boolean defined(Notebook.Line l, int c) {
+            int chosen = owner == null ? 2 : owner.getNotebook().getChosenDegree();
+            return quantity(c).isDefined(l.degree(item, chosen));
         }
 
         @Override
@@ -418,22 +518,28 @@ public class NotebookPanel extends javax.swing.JPanel {
 
         @Override
         public int getColumnCount() {
-            return 4;
+            return 1 + 3 * quantities.size();
         }
 
         @Override
         public String getColumnName(int c) {
-            switch (c) {
-                case 0: return item.getParameter();
-                case 1: return "ERD, м";
-                case 2: return "ERS, м";
-                default: return c == 3 ? "ER, м" : "";
+            if (c == 0) {
+                return item.getParameter();
             }
+            Notebook.Quantity q = quantity(c);
+            String name;
+            switch ((c - 1) % 3) {
+                case 0: name = q.getDynamicName(); break;
+                case 1: name = q.getRandomName(); break;
+                default: name = q.getTotalName(); break;
+            }
+            return name + ", " + q.getUnit();
         }
 
         @Override
         public boolean isCellEditable(int r, int c) {
-            return true;
+            Notebook.Line l = line(r);
+            return c == 0 || l == null || defined(l, c);
         }
 
         @Override
@@ -442,11 +548,17 @@ public class NotebookPanel extends javax.swing.JPanel {
             if (l == null) {
                 return "";
             }
-            switch (c) {
-                case 0: return text(l.getParameter());
-                case 1: return text(l.getRangeDynamic());
-                case 2: return text(l.getRangeRandom());
-                default: return text(l.getRangeTotal());
+            if (c == 0) {
+                return text(l.getParameter());
+            }
+            if (!defined(l, c)) {
+                return UNDEFINED;
+            }
+            Notebook.Quantity q = quantity(c);
+            switch ((c - 1) % 3) {
+                case 0: return text(l.getDynamic(q));
+                case 1: return text(l.getRandom(q));
+                default: return text(l.getTotal(q));
             }
         }
 
@@ -457,15 +569,21 @@ public class NotebookPanel extends javax.swing.JPanel {
                 return;
             }
             Double v = parse(value);
-            switch (c) {
-                case 0:
-                    if (v != null) {
-                        l.setParameter(v);
-                    }
-                    break;
-                case 1: l.setRangeDynamic(v); break;
-                case 2: l.setRangeRandom(v); break;
-                default: l.setRangeTotal(v); break;
+            if (c == 0) {
+                if (v != null) {
+                    l.setParameter(v);
+                }
+            } else {
+                Notebook.Quantity q = quantity(c);
+                Double d = l.getDynamic(q);
+                Double rnd = l.getRandom(q);
+                Double t = l.getTotal(q);
+                switch ((c - 1) % 3) {
+                    case 0: d = v; break;
+                    case 1: rnd = v; break;
+                    default: t = v; break;
+                }
+                l.set(q, d, rnd, t);
             }
             if (c > 0 && v != null && owner != null) {
                 // числа переписываются сразу после расчёта: запоминаем режим,
@@ -532,6 +650,7 @@ public class NotebookPanel extends javax.swing.JPanel {
         btnClear = new javax.swing.JButton();
         pnlChart = new javax.swing.JPanel();
         pnlChartButtons = new javax.swing.JPanel();
+        btnQuantity = new javax.swing.JToggleButton();
         btnScale = new javax.swing.JToggleButton();
         btnPlot = new javax.swing.JButton();
         scrConclusion = new javax.swing.JScrollPane();
@@ -587,6 +706,15 @@ public class NotebookPanel extends javax.swing.JPanel {
             .addGap(0, 280, Short.MAX_VALUE)
         );
 
+        btnQuantity.setText("ошибки скорости");
+        btnQuantity.setToolTipText("Переключить график: ошибки дальности / ошибки скорости");
+        btnQuantity.setFocusable(false);
+        btnQuantity.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnQuantityActionPerformed(evt);
+            }
+        });
+
         btnScale.setText("линейный масштаб");
         btnScale.setToolTipText("Переключить масштаб оси ошибок: логарифмический / линейный");
         btnScale.setFocusable(false);
@@ -609,6 +737,8 @@ public class NotebookPanel extends javax.swing.JPanel {
             pnlChartButtonsLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(pnlChartButtonsLayout.createSequentialGroup()
                 .addGap(0, 0, Short.MAX_VALUE)
+                .addComponent(btnQuantity, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(btnScale, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(btnPlot, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
@@ -616,6 +746,7 @@ public class NotebookPanel extends javax.swing.JPanel {
         pnlChartButtonsLayout.setVerticalGroup(
             pnlChartButtonsLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(pnlChartButtonsLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                .addComponent(btnQuantity)
                 .addComponent(btnScale)
                 .addComponent(btnPlot))
         );
@@ -757,6 +888,7 @@ public class NotebookPanel extends javax.swing.JPanel {
     private javax.swing.JSpinner spnDegree;
     private javax.swing.JSpinner spnSourceRow;
     private javax.swing.JTextArea txtConclusion;
+    private javax.swing.JToggleButton btnQuantity;
     private javax.swing.JToggleButton btnScale;
     // End of variables declaration//GEN-END:variables
 }

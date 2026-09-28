@@ -211,6 +211,99 @@ public class Notebook {
         }
     }
 
+    /**
+     * Оцениваемая величина, по ошибкам которой ведутся таблица и график
+     * тетради: дальность или радиальная скорость.
+     *
+     * Какие из них выписываются, определяется измеряемыми параметрами
+     * (признаком скорости) в исходных данных: при измерении одной дальности –
+     * только ошибки дальности, при измерении одной скорости – только ошибки
+     * скорости (дальность в этом случае не наблюдаема), при измерении обоих
+     * параметров – и те и другие. Ошибки с разными единицами на одном
+     * графике не совмещаются.
+     */
+    public enum Quantity {
+
+        RANGE("дальности", "м", "ERD", "ERS", "ER"),
+        SPEED("радиальной скорости", "м/с", "EVD", "EVS", "EV");
+
+        private final String genitive;
+        private final String unit;
+        private final String dynamicName;
+        private final String randomName;
+        private final String totalName;
+
+        Quantity(String genitive, String unit, String dynamicName,
+                String randomName, String totalName) {
+            this.genitive = genitive;
+            this.unit = unit;
+            this.dynamicName = dynamicName;
+            this.randomName = randomName;
+            this.totalName = totalName;
+        }
+
+        /** Название величины в родительном падеже: «ошибки … дальности». */
+        public String getGenitive() {
+            return genitive;
+        }
+
+        /** Единица измерения ошибок: «м» или «м/с». */
+        public String getUnit() {
+            return unit;
+        }
+
+        /** Обозначение динамической составляющей: ERD или EVD. */
+        public String getDynamicName() {
+            return dynamicName;
+        }
+
+        /** Обозначение случайной составляющей: ERS или EVS. */
+        public String getRandomName() {
+            return randomName;
+        }
+
+        /** Обозначение полной ошибки: ER или EV. */
+        public String getTotalName() {
+            return totalName;
+        }
+
+        /** Подпись оси ошибок на графике: «ошибка, м» или «ошибка, м/с». */
+        public String axisTitle() {
+            return "ошибка, " + unit;
+        }
+
+        /**
+         * Определена ли ошибка этой величины при заданной степени полинома.
+         * Оценка скорости берётся из коэффициента при первой степени, поэтому
+         * при m = 0 она не определена.
+         */
+        public boolean isDefined(int degree) {
+            return this == RANGE || degree >= 1;
+        }
+
+        /** Величины, ошибки которых выписываются при заданных измеряемых параметрах. */
+        public static List<Quantity> of(InputData.Measured measured) {
+            List<Quantity> out = new ArrayList<>();
+            if (measured == null || measured.hasRange()) {
+                out.add(RANGE);
+            }
+            if (measured != null && measured.hasVelocity()) {
+                out.add(SPEED);
+            }
+            return out;
+        }
+
+        /**
+         * Величина, по полной ошибке которой в пункте а выбирается степень
+         * полинома для пунктов б, в и г: при измерении дальности (одной или
+         * вместе со скоростью) – по ER, как в практикуме; при измерении одной
+         * скорости – по EV.
+         */
+        public static Quantity forDegreeChoice(InputData.Measured measured) {
+            return measured == InputData.Measured.VELOCITY ? SPEED : RANGE;
+        }
+    }
+
     /** Одна строка тетради: значение параметра и выписанные обучающимся числа. */
     public static class Line {
 
@@ -218,6 +311,9 @@ public class Notebook {
         private Double rangeDynamic;
         private Double rangeRandom;
         private Double rangeTotal;
+        private Double speedDynamic;
+        private Double speedRandom;
+        private Double speedTotal;
         /** Признак того, что число расходится с расчётом программы. */
         private boolean suspicious;
 
@@ -269,6 +365,64 @@ public class Notebook {
             this.rangeTotal = v;
         }
 
+        public Double getSpeedDynamic() {
+            return speedDynamic;
+        }
+
+        public void setSpeedDynamic(Double v) {
+            this.speedDynamic = v;
+        }
+
+        public Double getSpeedRandom() {
+            return speedRandom;
+        }
+
+        public void setSpeedRandom(Double v) {
+            this.speedRandom = v;
+        }
+
+        public Double getSpeedTotal() {
+            return speedTotal;
+        }
+
+        public void setSpeedTotal(Double v) {
+            this.speedTotal = v;
+        }
+
+        /** Динамическая ошибка заданной величины: ERD или EVD. */
+        public Double getDynamic(Quantity q) {
+            return q == Quantity.SPEED ? speedDynamic : rangeDynamic;
+        }
+
+        /** Случайная ошибка заданной величины: ERS или EVS. */
+        public Double getRandom(Quantity q) {
+            return q == Quantity.SPEED ? speedRandom : rangeRandom;
+        }
+
+        /** Полная ошибка заданной величины: ER или EV. */
+        public Double getTotal(Quantity q) {
+            return q == Quantity.SPEED ? speedTotal : rangeTotal;
+        }
+
+        /** Заносит три числа заданной величины. */
+        public void set(Quantity q, Double dynamic, Double random, Double total) {
+            if (q == Quantity.SPEED) {
+                speedDynamic = dynamic;
+                speedRandom = random;
+                speedTotal = total;
+            } else {
+                rangeDynamic = dynamic;
+                rangeRandom = random;
+                rangeTotal = total;
+            }
+        }
+
+        /** Стирает все выписанные числа строки – и дальности, и скорости. */
+        public void clearNumbers() {
+            set(Quantity.RANGE, null, null, null);
+            set(Quantity.SPEED, null, null, null);
+        }
+
         public boolean isSuspicious() {
             return suspicious;
         }
@@ -280,6 +434,49 @@ public class Notebook {
         /** Все три числа выписаны. */
         public boolean isFilled() {
             return rangeDynamic != null && rangeRandom != null && rangeTotal != null;
+        }
+
+        /** Все три числа заданной величины выписаны. */
+        public boolean isFilled(Quantity q) {
+            return getDynamic(q) != null && getRandom(q) != null && getTotal(q) != null;
+        }
+
+        /**
+         * Степень полинома, при которой получены числа этой строки: запомненная
+         * вместе с ними, а если режим не запомнен – в пункте а сам изменяемый
+         * параметр, в остальных пунктах степень, принятая по итогам пункта а.
+         */
+        public int degree(Item item, int chosenDegree) {
+            if (degree != null) {
+                return degree;
+            }
+            return item == Item.A ? (int) Math.round(parameter) : chosenDegree;
+        }
+
+        /**
+         * Выписаны ли все числа, которые требуются при заданных измеряемых
+         * параметрах. Ошибки скорости при m = 0 не определены и не требуются;
+         * при измерении одной скорости такая строка поэтому пустая по
+         * существу и заполненной не считается.
+         */
+        public boolean isComplete(InputData.Measured measured, Item item, int chosenDegree) {
+            boolean any = false;
+            for (Quantity q : Quantity.of(measured)) {
+                if (!q.isDefined(degree(item, chosenDegree))) {
+                    continue;
+                }
+                if (!isFilled(q)) {
+                    return false;
+                }
+                any = true;
+            }
+            return any;
+        }
+
+        /** Выписано ли хоть одно число строки – дальности или скорости. */
+        public boolean hasAnyNumber() {
+            return rangeDynamic != null || rangeRandom != null || rangeTotal != null
+                    || speedDynamic != null || speedRandom != null || speedTotal != null;
         }
 
         /** Запоминает режим обработки, при котором получены эти числа. */
@@ -391,9 +588,22 @@ public class Notebook {
          * @param chosenDegree степень, принятая по итогам пункта а
          */
         public String conditions(Item item, int chosenDegree) {
+            return conditions(item, chosenDegree, InputData.Measured.RANGE);
+        }
+
+        /**
+         * То же с учётом измеряемых параметров: в описание идут строки, где
+         * выписаны все числа, требуемые при этих параметрах (при измерении
+         * одной скорости – ошибки скорости, при измерении обоих параметров –
+         * и дальности, и скорости). Смысл описания от этого не меняется.
+         *
+         * @param measured измеряемые параметры по исходным данным
+         */
+        public String conditions(Item item, int chosenDegree, InputData.Measured measured) {
             List<Line> known = new ArrayList<>();
             for (Line l : lines) {
-                if (l.isFilled() && l.hasMode() && modeFits(l, item)) {
+                if (l.isComplete(measured, item, chosenDegree) && l.hasMode()
+                        && modeFits(l, item)) {
                     known.add(l);
                 }
             }
@@ -494,6 +704,35 @@ public class Notebook {
             }
             return filled >= 2;
         }
+
+        /**
+         * Заполнена ли страница настолько, чтобы строить графики по всем
+         * величинам, которые выписываются при заданных измеряемых параметрах:
+         * по каждой из них не меньше двух заполненных строк. Строки, где
+         * ошибка скорости не определена (m = 0), для скорости не считаются.
+         *
+         * @param measured     измеряемые параметры по исходным данным
+         * @param chosenDegree степень, принятая по итогам пункта а
+         */
+        public boolean isReady(InputData.Measured measured, Item item, int chosenDegree) {
+            for (Quantity q : Quantity.of(measured)) {
+                if (filledCount(q, item, chosenDegree) < 2) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        /** Число строк, где выписаны все три числа заданной величины. */
+        public int filledCount(Quantity q, Item item, int chosenDegree) {
+            int filled = 0;
+            for (Line l : lines) {
+                if (q.isDefined(l.degree(item, chosenDegree)) && l.isFilled(q)) {
+                    filled++;
+                }
+            }
+            return filled;
+        }
     }
 
     private final Map<Item, Page> pages = new EnumMap<>(Item.class);
@@ -532,6 +771,17 @@ public class Notebook {
         int n = 0;
         for (Page p : pages.values()) {
             if (p.isReady()) {
+                n++;
+            }
+        }
+        return n;
+    }
+
+    /** То же с учётом измеряемых параметров (см. {@link Page#isReady(InputData.Measured, Item, int)}). */
+    public int readyCount(InputData.Measured measured) {
+        int n = 0;
+        for (Map.Entry<Item, Page> e : pages.entrySet()) {
+            if (e.getValue().isReady(measured, e.getKey(), chosenDegree)) {
                 n++;
             }
         }

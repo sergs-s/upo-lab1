@@ -38,7 +38,29 @@ public final class Report {
     public static void write(Path file, Student student, InputData data,
             Notebook notebook, Map<Notebook.Item, BufferedImage> charts)
             throws IOException {
+        write(file, student, data, notebook, charts, null);
+    }
+
+    /**
+     * Записывает отчёт с графиками ошибок и дальности, и скорости.
+     *
+     * Какие таблицы и графики попадают в отчёт, определяется измеряемыми
+     * параметрами: при измерении одной дальности – только по дальности
+     * (отчёт в точности прежний), при измерении одной скорости – только по
+     * скорости, при измерении обоих параметров – по каждому пункту таблица
+     * дальности, таблица скорости и два графика.
+     *
+     * @param rangeCharts графики ошибок дальности по пунктам задания
+     * @param speedCharts графики ошибок скорости по пунктам задания
+     */
+    public static void write(Path file, Student student, InputData data,
+            Notebook notebook, Map<Notebook.Item, BufferedImage> rangeCharts,
+            Map<Notebook.Item, BufferedImage> speedCharts)
+            throws IOException {
         DocxWriter doc = new DocxWriter();
+        InputData.Measured measured = data.getMeasured() == null
+                ? InputData.Measured.RANGE : data.getMeasured();
+        List<Notebook.Quantity> quantities = Notebook.Quantity.of(measured);
 
         doc.heading("Отчёт по лабораторной работе", 1);
         doc.heading("«Исследование эффективности устройств предварительной "
@@ -64,37 +86,58 @@ public final class Report {
             rows.add(new String[] {"Траверзное расстояние, км", num(data.getTraverseDistance())});
             rows.add(new String[] {"Относительная скорость, м/с", num(data.getRelativeSpeed())});
         }
-        rows.add(new String[] {"СКО измерения дальности, м", num(data.getSigmaRange())});
+        if (measured.hasRange()) {
+            rows.add(new String[] {"СКО измерения дальности, м", num(data.getSigmaRange())});
+        }
         if (data.getMeasured().hasVelocity()) {
             rows.add(new String[] {"СКО измерения скорости, м/с", num(data.getSigmaVelocity())});
         }
         doc.table(new String[] {"Величина", "Значение"}, rows);
 
         int number = 2;
+        int figure = 0;
+        int chosen = notebook.getChosenDegree();
         for (Notebook.Item item : Notebook.Item.values()) {
             Notebook.Page page = notebook.page(item);
             doc.heading(number + ". Пункт " + item.getLetter() + ": влияние параметра "
                     + item.getParameter() + " (" + item.getParameterTitle() + ")", 2);
-            doc.paragraph("Условия: " + page.conditions(item, notebook.getChosenDegree())
+            doc.paragraph("Условия: " + page.conditions(item, chosen, measured)
                     + ". Числа сняты из строки " + page.getSourceRow()
                     + " таблицы результатов.");
 
-            List<String[]> table = new ArrayList<>();
-            for (Notebook.Line l : page.getLines()) {
-                table.add(new String[] {
-                    num(l.getParameter()),
-                    num(l.getRangeDynamic()),
-                    num(l.getRangeRandom()),
-                    num(l.getRangeTotal())
-                });
+            for (Notebook.Quantity q : quantities) {
+                List<String[]> table = new ArrayList<>();
+                for (Notebook.Line l : page.getLines()) {
+                    boolean defined = q.isDefined(l.degree(item, chosen));
+                    table.add(new String[] {
+                        num(l.getParameter()),
+                        defined ? num(l.getDynamic(q)) : UNDEFINED,
+                        defined ? num(l.getRandom(q)) : UNDEFINED,
+                        defined ? num(l.getTotal(q)) : UNDEFINED
+                    });
+                }
+                if (quantities.size() > 1) {
+                    doc.paragraph("Ошибки оценивания " + q.getGenitive() + ":");
+                }
+                doc.table(new String[] {item.getParameter(),
+                    q.getDynamicName() + ", " + q.getUnit(),
+                    q.getRandomName() + ", " + q.getUnit(),
+                    q.getTotalName() + ", " + q.getUnit()}, table);
             }
-            doc.table(new String[] {item.getParameter(), "ERD, м", "ERS, м", "ER, м"}, table);
 
-            BufferedImage img = charts == null ? null : charts.get(item);
-            if (img != null) {
-                doc.image(img, 560);
-                doc.paragraph("Рисунок " + (number - 1) + ". Зависимость ошибок оценивания "
-                        + "дальности от параметра " + item.getParameter() + ".");
+            for (Notebook.Quantity q : quantities) {
+                Map<Notebook.Item, BufferedImage> charts =
+                        q == Notebook.Quantity.SPEED ? speedCharts : rangeCharts;
+                BufferedImage img = charts == null ? null : charts.get(item);
+                if (img != null) {
+                    // при измерении одной дальности номер рисунка по-прежнему
+                    // совпадает с номером пункта; при двух графиках на пункт
+                    // рисунки нумеруются подряд
+                    figure = measured == InputData.Measured.RANGE ? number - 1 : figure + 1;
+                    doc.image(img, 560);
+                    doc.paragraph("Рисунок " + figure + ". Зависимость ошибок оценивания "
+                            + q.getGenitive() + " от параметра " + item.getParameter() + ".");
+                }
             }
             String conclusion = page.getConclusion().trim();
             doc.paragraph("Вывод: " + (conclusion.isEmpty() ? "не записан." : conclusion));
@@ -117,6 +160,9 @@ public final class Report {
         return "Отчёт ЛР1 " + name + " гр " + student.getGroup()
                 + " вар " + student.getVariantNumber() + ".docx";
     }
+
+    /** Знак неопределённого значения: ошибка скорости при m = 0. */
+    private static final String UNDEFINED = "–";
 
     private static String num(Double v) {
         if (v == null || Double.isNaN(v)) {
