@@ -197,8 +197,8 @@ public class GeometryView extends JPanel {
         int h = getHeight();
         int left = 24;
         int right = w - 24;
-        int top = 34;
-        int bottom = h - 44;
+        int top = 22;
+        int bottom = h - 40;
 
         double tk = data.getInterval();
         double tr = data.getTraverseDistance() * 1000.0;   // м
@@ -215,18 +215,23 @@ public class GeometryView extends JPanel {
 
         // измеритель внизу посередине, прямая движения объекта выше него
         double px = (left + right) / 2.0;
-        double py = bottom - 16;
+        double py = bottom - 8;
+        // над прямой движения оставляем строку под подписи отметок
+        double avail = Math.max(8, py - top - 12);
         double sx = (right - left) / 2.0 / span;
-        double sy = (py - top - 18) / Math.max(tr, 1e-9);
+        double sy = avail / Math.max(tr, 1e-9);
         double scale = Math.min(sx, sy);
         double vy = tr * scale;
         boolean conventional = false;
-        if (vy < 40) {
+        if (vy < Math.min(40, avail * 0.6)) {
             // траверзное расстояние мало по сравнению с пройденным путём:
             // откладываем его в условном масштабе, чтобы рисунок читался
-            vy = Math.max(40, (py - top - 18) * 0.5);
+            vy = avail * 0.6;
             conventional = true;
         }
+        // размер силуэтов – по высоте поля, чтобы при низком окне они
+        // не закрывали чертёж
+        double plane = Math.max(6, Math.min(11, avail / 5));
         double ly = py - vy;                               // прямая движения
 
         // прямая относительного движения на интервале измерений
@@ -237,6 +242,10 @@ public class GeometryView extends JPanel {
                 10f, new float[] {6f, 4f}, 0f));
         g.draw(new Line2D.Double(ax, ly, bx, ly));
         g.setStroke(new BasicStroke(1f));
+        // направление относительного движения – стрелка за концом прямой
+        double tip = (v0 >= 0 ? Math.max(ax, bx) : Math.min(ax, bx)) + (v0 >= 0 ? 14 : -14);
+        g.draw(new Line2D.Double(v0 >= 0 ? tip - 12 : tip + 12, ly, tip, ly));
+        g.fill(arrowHead(tip, ly, v0 >= 0 ? 0.0 : Math.PI));
 
         // траверзное расстояние: перпендикуляр из измерителя на прямую
         double cx = px;
@@ -252,9 +261,12 @@ public class GeometryView extends JPanel {
         boolean objectRight = ox >= cx;
         String trText = String.format(Locale.ROOT, "TR = %s км", trim(tr / 1000.0));
         int trw = g.getFontMetrics().stringWidth(trText);
-        g.setColor(Color.GRAY);
-        g.drawString(trText, (float) (objectRight ? cx - trw - 5 : cx + 5),
-                (float) ((py + ly) / 2 - 8));
+        if (vy >= 34) {
+            // при низком поле подпись не помещается: TR есть в подписи внизу
+            g.setColor(Color.GRAY);
+            g.drawString(trText, (float) (objectRight ? cx - trw - 5 : cx + 5),
+                    (float) ((py + ly) / 2 - 4));
+        }
 
         // отметки начала, траверза и конца интервала; подпись отметки
         // пропускается, если наезжает на уже выведенную (при малом пути
@@ -293,26 +305,20 @@ public class GeometryView extends JPanel {
         int rw = g.getFontMetrics().stringWidth(rText);
         double rx = (px + ox) / 2 + (objectRight ? 8 : -rw - 8);
         rx = Math.max(4, Math.min(rx, w - 4 - rw));
-        g.drawString(rText, (float) rx, (float) ((py + ly) / 2 + 16));
+        g.drawString(rText, (float) rx, (float) Math.min((py + ly) / 2 + 14, py - 2));
 
         // объект и измеритель: силуэты самолётов, объект летит вдоль прямой
-        drawAircraft(g, ox, ly, 11, v0 >= 0 ? 0.0 : Math.PI, OBJECT);
-        drawAircraft(g, px, py, 9, -Math.PI / 2, Color.DARK_GRAY);
-        g.setColor(OBJECT);
-        g.drawString("объект", (float) Math.min(ox + 12, w - 44), (float) (ly + 18));
+        drawAircraft(g, ox, ly, plane, v0 >= 0 ? 0.0 : Math.PI, OBJECT);
+        drawAircraft(g, px, py, plane * 0.85, -Math.PI / 2, Color.DARK_GRAY);
+        if (vy >= 60) {
+            // при низком поле подпись наезжала бы на подпись дальности
+            g.setColor(OBJECT);
+            int ow = g.getFontMetrics().stringWidth("объект");
+            g.drawString("объект", (float) Math.max(4, Math.min(ox + plane + 2, w - 4 - ow)),
+                    (float) (ly + plane + 8));
+        }
         g.setColor(Color.DARK_GRAY);
-        g.drawString("измеритель", (float) (px + 12), (float) (py + 4));
-
-        // направление относительной скорости
-        double arrowY = Math.max(14, ly - 34);
-        double a0 = px - 30;
-        double a1 = px + 30;
-        g.setColor(ORBIT);
-        g.draw(new Line2D.Double(a0, arrowY, a1, arrowY));
-        g.fill(arrowHead(v0 >= 0 ? a1 : a0, arrowY, v0 >= 0 ? 0.0 : Math.PI));
-        g.setColor(Color.GRAY);
-        g.drawString(String.format(Locale.ROOT, "V0 = %s м/с", trim(v0)),
-                (float) (a1 + 8), (float) (arrowY + 4));
+        g.drawString("измеритель", (float) (px + plane + 3), (float) (py + 4));
 
         g.setColor(Color.GRAY);
         drawFitted(g, String.format(Locale.ROOT,
