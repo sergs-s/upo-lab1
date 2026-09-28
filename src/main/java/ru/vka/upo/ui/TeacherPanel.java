@@ -397,8 +397,11 @@ public class TeacherPanel extends javax.swing.JPanel {
         }
 
         private static String num(double v) {
-            if (Double.isNaN(v)) {
-                return "";
+            if (Double.isNaN(v) || Double.isInfinite(v)) {
+                // ошибки скорости при m = 0 не определены (оценка скорости
+                // берётся из коэффициента при первой степени полинома);
+                // бесконечность означает, что величина не наблюдаема
+                return "–";
             }
             double a = Math.abs(v);
             if (v == Math.rint(v) && a < 1e6) {

@@ -104,8 +104,32 @@ public class ResultsPanel extends javax.swing.JPanel {
                 }
             });
         }
-        lblWrite.setText("<html><b>В рабочую тетрадь выпишите значения ERD, ERS "
-                + "и ER из первой строки таблицы</b> – так предписывает "
+        lblWrite.setText(writeHint(InputData.Measured.RANGE));
+
+        pnlPictures.setLayout(new GridLayout(1, 3, 8, 0));
+        pnlPictures.add(wrap(geometry, "Пролёт объекта над пунктом"));
+        pnlPictures.add(wrap(fit, "Измерения и аппроксимирующий полином"));
+        pnlPictures.add(wrap(errors, "Ход ошибок по интервалу усреднения"));
+
+        lblMode.setFont(lblMode.getFont().deriveFont(Font.BOLD));
+        lblCaption.setText(CAPTION);
+    }
+
+    /**
+     * Подсказка, какие числа выписывать в рабочую тетрадь: зависит от
+     * измеряемых параметров. При измерении одной дальности текст прежний.
+     */
+    private static String writeHint(InputData.Measured measured) {
+        String what;
+        if (measured == InputData.Measured.VELOCITY) {
+            what = "значения EVD, EVS и EV";
+        } else if (measured == InputData.Measured.BOTH) {
+            what = "значения ERD, ERS, ER и EVD, EVS, EV";
+        } else {
+            what = "значения ERD, ERS и ER";
+        }
+        return "<html><b>В рабочую тетрадь выпишите " + what + " из первой строки "
+                + "таблицы</b> – так предписывает "
                 + "руководство к работе (п. 4.3): для построения графиков "
                 + "зависимостей ошибок от параметров режима обработки из "
                 + "таблицы берётся каждый раз первая строка. Остальные строки "
@@ -116,15 +140,7 @@ public class ResultsPanel extends javax.swing.JPanel {
                         + "по строке правой кнопкой мыши и укажите пункт "
                         + "задания, в таблицу которого их занести."
                         : "")
-                + "</html>");
-
-        pnlPictures.setLayout(new GridLayout(1, 3, 8, 0));
-        pnlPictures.add(wrap(geometry, "Пролёт объекта над пунктом"));
-        pnlPictures.add(wrap(fit, "Измерения и аппроксимирующий полином"));
-        pnlPictures.add(wrap(errors, "Ход ошибок по интервалу усреднения"));
-
-        lblMode.setFont(lblMode.getFont().deriveFont(Font.BOLD));
-        lblCaption.setText(CAPTION);
+                + "</html>";
     }
 
     private static javax.swing.JPanel wrap(javax.swing.JComponent view, String title) {
@@ -151,6 +167,7 @@ public class ResultsPanel extends javax.swing.JPanel {
         trajectory = Trajectory.of(data);
         model.setRows(new Processor(data, trajectory).table());
         lblMode.setText(describe(data));
+        lblWrite.setText(writeHint(data.getMeasured()));
         if (model.getRowCount() > 0) {
             table.setRowSelectionInterval(0, 0);
         }
@@ -253,9 +270,8 @@ public class ResultsPanel extends javax.swing.JPanel {
 
         JPopupMenu menu = new JPopupMenu();
         JMenuItem header = new JMenuItem(String.format(Locale.ROOT,
-                "Строка %d (t = %s с): ERD = %s, ERS = %s, ER = %s – занести в пункт:",
-                line, num(r.getTime()), num(r.getRangeDynamic()),
-                num(r.getRangeRandom()), num(r.getRangeTotal())));
+                "Строка %d (t = %s с): %s – занести в пункт:",
+                line, num(r.getTime()), numbers(r)));
         header.setEnabled(false);
         menu.add(header);
         menu.addSeparator();
@@ -293,20 +309,47 @@ public class ResultsPanel extends javax.swing.JPanel {
         double value = item.parameterValue(data);
         Notebook.Page page = owner.getNotebook().page(item);
         Notebook.Line target = page.lineFor(value);
-        target.setRangeDynamic(r.getRangeDynamic());
-        target.setRangeRandom(r.getRangeRandom());
-        target.setRangeTotal(r.getRangeTotal());
+        for (Notebook.Quantity q : Notebook.Quantity.of(data.getMeasured())) {
+            if (q == Notebook.Quantity.SPEED) {
+                // при m = 0 ошибки скорости не определены: не заносятся
+                if (q.isDefined(data.getDegree()) && !Double.isNaN(r.getSpeedTotal())) {
+                    target.set(q, r.getSpeedDynamic(), r.getSpeedRandom(), r.getSpeedTotal());
+                }
+            } else {
+                target.set(q, r.getRangeDynamic(), r.getRangeRandom(), r.getRangeTotal());
+            }
+        }
         target.setSuspicious(false);
         // вместе с числами запоминается режим, при котором они получены:
         // именно он пойдёт в отчёт, а не предписанный пунктом задания
         target.setMode(data);
         page.setSourceRow(line);
         owner.setStatus(String.format(Locale.ROOT,
-                "В тетрадь, пункт %s: при %s = %s занесены ERD = %s, ERS = %s, ER = %s "
+                "В тетрадь, пункт %s: при %s = %s занесены %s "
                 + "(строка %d таблицы)",
                 item.getLetter(), item.getParameter(), num(value),
-                num(r.getRangeDynamic()), num(r.getRangeRandom()),
-                num(r.getRangeTotal()), line));
+                numbers(r), line));
+    }
+
+    /**
+     * Числа строки, которые выписываются в тетрадь при текущих измеряемых
+     * параметрах: «ERD = …, ERS = …, ER = …» и/или то же для скорости.
+     */
+    private String numbers(ErrorRow r) {
+        StringBuilder sb = new StringBuilder();
+        for (Notebook.Quantity q : Notebook.Quantity.of(data.getMeasured())) {
+            boolean speed = q == Notebook.Quantity.SPEED;
+            if (sb.length() > 0) {
+                sb.append("; ");
+            }
+            sb.append(q.getDynamicName()).append(" = ")
+              .append(num(speed ? r.getSpeedDynamic() : r.getRangeDynamic()))
+              .append(", ").append(q.getRandomName()).append(" = ")
+              .append(num(speed ? r.getSpeedRandom() : r.getRangeRandom()))
+              .append(", ").append(q.getTotalName()).append(" = ")
+              .append(num(speed ? r.getSpeedTotal() : r.getRangeTotal()));
+        }
+        return sb.toString();
     }
 
     private void btnNoiseActionPerformed(java.awt.event.ActionEvent evt) {
