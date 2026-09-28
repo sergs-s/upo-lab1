@@ -615,7 +615,7 @@ public class InputPanel extends javax.swing.JPanel {
 
         lblSample.setText("Объём выборки N");
 
-        lblStep.setText("Шаг измерений T");
+        lblStep.setText("Шаг измерений Δt");
 
         lblStepUnit.setText("с");
 

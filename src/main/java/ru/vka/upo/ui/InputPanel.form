@@ -374,7 +374,7 @@
         </Component>
         <Component class="javax.swing.JLabel" name="lblStep">
           <Properties>
-            <Property name="text" type="java.lang.String" value="Шаг измерений T"/>
+            <Property name="text" type="java.lang.String" value="Шаг измерений Δt"/>
           </Properties>
         </Component>
         <Component class="javax.swing.JTextField" name="txtStep">

@@ -477,7 +477,7 @@ public final class MathFigures {
 
         g.setColor(Color.DARK_GRAY);
         g.setFont(new Font(Font.SERIF, Font.PLAIN, 14));
-        g.drawString("параметр режима обработки  (m, T, N или M0)",
+        g.drawString("параметр режима обработки  (m, Δt, N или M0)",
                 (float) (x0 + 170), (float) (y0 + 20));
 
         int ly = legend(g, x0, y0 + 40, x1, new Color[] {POINT, ACCENT, CURVE},

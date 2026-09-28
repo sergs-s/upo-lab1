@@ -79,12 +79,12 @@ public class InputData implements Cloneable {
     private int degree = 2;
     /** Объём выборки N. */
     private int sampleSize = 49;
-    /** Шаг измерений T, с. */
+    /** Шаг измерений Δt, с. */
     private double step = 0.1;
     /** Момент привязки M0: номер измерения в выборке, нумерация с единицы. */
     private int anchor = 25;
 
-    /** Длительность интервала усреднения, с. */
+    /** Длительность интервала усреднения Tу = (N − 1)Δt, с. */
     public double averagingInterval() {
         return (sampleSize - 1) * step;
     }

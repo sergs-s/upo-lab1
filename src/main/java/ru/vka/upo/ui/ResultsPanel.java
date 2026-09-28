@@ -160,7 +160,7 @@ public class ResultsPanel extends javax.swing.JPanel {
 
     private static String describe(InputData d) {
         return String.format(Locale.ROOT, "<html>Режим обработки: степень полинома m = %d, объём "
-                + "выборки N = %d, шаг измерений T = %s с, привязка M0 = %d "
+                + "выборки N = %d, шаг измерений Δt = %s с, привязка M0 = %d "
                 + "(интервал усреднения %s с)</html>",
                 d.getDegree(), d.getSampleSize(), num(d.getStep()), d.getAnchor(),
                 num(d.averagingInterval()));
@@ -238,7 +238,7 @@ public class ResultsPanel extends javax.swing.JPanel {
      *
      * Программа не знает, какой из четырёх опытов проводится: один и тот же
      * режим обработки может относиться к разным пунктам задания (например,
-     * m = 3, N = 49, T = 1 с, M0 = 25 подходит и под пункт б, и под пункт г).
+     * m = 3, N = 49, Δt = 1 с, M0 = 25 подходит и под пункт б, и под пункт г).
      * Поэтому пункт выбирает обучающийся, а программа лишь помечает тот,
      * которому заданный режим отвечает по закреплённым параметрам.
      */
