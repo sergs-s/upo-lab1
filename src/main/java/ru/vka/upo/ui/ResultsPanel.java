@@ -149,7 +149,7 @@ public class ResultsPanel extends javax.swing.JPanel {
 
     /** Заголовки чертежа для наземного и бортового измерителя. */
     private static final String GROUND_TITLE = "Пролёт объекта над пунктом";
-    private static final String AIRBORNE_TITLE = "Относительное движение объектов";
+    private static final String AIRBORNE_TITLE = "Пролёт измерителя над объектом";
 
     private static javax.swing.JPanel wrap(javax.swing.JComponent view, String title) {
         javax.swing.JPanel p = new javax.swing.JPanel(new BorderLayout());
