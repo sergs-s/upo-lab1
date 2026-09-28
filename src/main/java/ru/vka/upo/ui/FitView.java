@@ -13,6 +13,7 @@ import java.awt.geom.Line2D;
 import java.awt.geom.Path2D;
 import javax.swing.JPanel;
 import ru.vka.upo.core.Realization;
+import ru.vka.upo.model.InputData;
 
 /**
  * Ход дальности на интервале усреднения: истинная кривая, отсчёты с шумом,
@@ -59,6 +60,16 @@ public class FitView extends JPanel {
         if (r == null) {
             g.setColor(Color.GRAY);
             g.drawString("График появится после расчёта", 12, getHeight() / 2);
+            g.dispose();
+            return;
+        }
+        if (r.getData().getMeasured() == InputData.Measured.VELOCITY) {
+            // рисунок показывает измерения дальности и проведённый по ним
+            // полином; при измерении одной скорости таких измерений нет
+            g.setColor(Color.GRAY);
+            int y = getHeight() / 2 - 8;
+            g.drawString("Измеряется только радиальная скорость:", 12, y);
+            g.drawString("измерений дальности нет, рисунок не строится", 12, y + 16);
             g.dispose();
             return;
         }

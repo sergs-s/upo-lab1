@@ -35,6 +35,8 @@ public class ErrorView extends JPanel {
     private static final Color ZERO = new Color(0x66, 0x66, 0x66);
 
     private ErrorProfile profile;
+    /** Пояснение вместо рисунка, если ход ошибок дальности не определён. */
+    private String unavailable;
 
     public ErrorView() {
         setBackground(BG);
@@ -43,6 +45,18 @@ public class ErrorView extends JPanel {
 
     public void show(ErrorProfile p) {
         this.profile = p;
+        this.unavailable = null;
+        repaint();
+    }
+
+    /**
+     * Вместо рисунка выводит пояснение: например, при измерении одной
+     * радиальной скорости дальность не оценивается и её ошибки не определены.
+     * Строки пояснения разделяются символом перевода строки.
+     */
+    public void showUnavailable(String message) {
+        this.profile = null;
+        this.unavailable = message;
         repaint();
     }
 
@@ -57,7 +71,15 @@ public class ErrorView extends JPanel {
         ErrorProfile p = profile;
         if (p == null) {
             g.setColor(Color.GRAY);
-            g.drawString("График появится после расчёта", 12, getHeight() / 2);
+            if (unavailable != null) {
+                int y = getHeight() / 2 - 8;
+                for (String line : unavailable.split("\n")) {
+                    g.drawString(line, 12, y);
+                    y += 16;
+                }
+            } else {
+                g.drawString("График появится после расчёта", 12, getHeight() / 2);
+            }
             g.dispose();
             return;
         }
@@ -82,6 +104,15 @@ public class ErrorView extends JPanel {
             double sig = p.random(t);
             lo = Math.min(lo, Math.min(dyn, -sig));
             hi = Math.max(hi, Math.max(dyn, sig));
+        }
+        if (Double.isNaN(lo) || Double.isNaN(hi)
+                || Double.isInfinite(lo) || Double.isInfinite(hi)) {
+            // ошибки не определены (например, не наблюдаема сама величина):
+            // строить нечего, а шкала из «NaN» ничего не объясняет
+            g.setColor(Color.GRAY);
+            g.drawString("Ход ошибок при этих данных не определён", 12, getHeight() / 2);
+            g.dispose();
+            return;
         }
         if (hi - lo < 1e-12) {
             hi = lo + 1e-12;

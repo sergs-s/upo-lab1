@@ -43,6 +43,8 @@ public class ResultsPanel extends javax.swing.JPanel {
     private final ErrorView errors = new ErrorView();
     private final Model model = new Model();
     private JTable table;
+    /** Рамка чертежа: её заголовок зависит от вида измерителя. */
+    private javax.swing.border.TitledBorder geometryBorder;
 
     private InputData data;
     private Trajectory trajectory;
@@ -107,7 +109,9 @@ public class ResultsPanel extends javax.swing.JPanel {
         lblWrite.setText(writeHint(InputData.Measured.RANGE));
 
         pnlPictures.setLayout(new GridLayout(1, 3, 8, 0));
-        pnlPictures.add(wrap(geometry, "Пролёт объекта над пунктом"));
+        javax.swing.JPanel geometryPanel = wrap(geometry, GROUND_TITLE);
+        geometryBorder = (javax.swing.border.TitledBorder) geometryPanel.getBorder();
+        pnlPictures.add(geometryPanel);
         pnlPictures.add(wrap(fit, "Измерения и аппроксимирующий полином"));
         pnlPictures.add(wrap(errors, "Ход ошибок по интервалу усреднения"));
 
@@ -143,6 +147,10 @@ public class ResultsPanel extends javax.swing.JPanel {
                 + "</html>";
     }
 
+    /** Заголовки чертежа для наземного и бортового измерителя. */
+    private static final String GROUND_TITLE = "Пролёт объекта над пунктом";
+    private static final String AIRBORNE_TITLE = "Относительное движение объектов";
+
     private static javax.swing.JPanel wrap(javax.swing.JComponent view, String title) {
         javax.swing.JPanel p = new javax.swing.JPanel(new BorderLayout());
         p.setBorder(BorderFactory.createTitledBorder(title));
@@ -165,6 +173,7 @@ public class ResultsPanel extends javax.swing.JPanel {
     public void onShown() {
         data = owner.getInputData();
         trajectory = Trajectory.of(data);
+        model.setMeasured(data.getMeasured());
         model.setRows(new Processor(data, trajectory).table());
         lblMode.setText(describe(data));
         lblWrite.setText(writeHint(data.getMeasured()));
@@ -201,9 +210,22 @@ public class ResultsPanel extends javax.swing.JPanel {
         }
         ErrorRow r = model.row(row);
         Realization real = new Realization(data, trajectory, r.getWindowStart(), seed);
+        geometryBorder.setTitle(data.getMeasurer() == InputData.Measurer.AIRBORNE
+                ? AIRBORNE_TITLE : GROUND_TITLE);
+        pnlPictures.repaint();
         geometry.show(data, trajectory, r.getTime());
         fit.show(real);
-        errors.show(new ErrorProfile(data, trajectory, r.getWindowStart()));
+        boolean velocityOnly = data.getMeasured() == InputData.Measured.VELOCITY;
+        if (velocityOnly) {
+            // дальность при измерении одной скорости не наблюдаема: её ошибки
+            // бесконечны, и рисовать их ход бессмысленно
+            errors.showUnavailable("Измеряется только радиальная скорость:\n"
+                    + "дальность не оценивается, ход её ошибок не строится");
+        } else {
+            errors.show(new ErrorProfile(data, trajectory, r.getWindowStart()));
+        }
+        // отдельные реализации шума моделируются для измерений дальности
+        btnNoise.setEnabled(!velocityOnly);
 
         if (!nextTrial) {
             trials.clear();
@@ -217,6 +239,14 @@ public class ResultsPanel extends javax.swing.JPanel {
      * и разброс по всем опытам в сопоставлении с расчётными ERD и ERS.
      */
     private String statistics(ErrorRow r) {
+        InputData.Measured measured = data.getMeasured();
+        if (measured == InputData.Measured.VELOCITY) {
+            return "<html>Отдельные реализации шума показываются для измерений "
+                    + "дальности; при измерении одной радиальной скорости рисунка "
+                    + "измерений и сводки по опытам нет. В таблице приведены "
+                    + "характеристики ошибок оценивания скорости, от реализации "
+                    + "шума они не зависят.</html>";
+        }
         int n = trials.size();
         double current = trials.get(n - 1);
         StringBuilder sb = new StringBuilder("<html>");
@@ -239,10 +269,24 @@ public class ResultsPanel extends javax.swing.JPanel {
                 var += (e - mean) * (e - mean);
             }
             double sd = Math.sqrt(var / (n - 1));
-            sb.append(String.format(Locale.ROOT, "&nbsp; По %d опытам: среднее %+.4g м "
-                    + "(расчётная ERD = %.4g м), разброс %.4g м "
-                    + "(расчётная ERS = %.4g м).",
-                    n, mean, r.getRangeDynamic(), sd, r.getRangeRandom()));
+            if (measured == InputData.Measured.BOTH) {
+                // реализация моделирует только измерения дальности, а таблица
+                // получена совместной обработкой дальности и скорости:
+                // сопоставлять их числа напрямую нельзя
+                sb.append(String.format(Locale.ROOT, "&nbsp; По %d опытам: среднее %+.4g м, "
+                        + "разброс %.4g м.", n, mean, sd));
+            } else {
+                sb.append(String.format(Locale.ROOT, "&nbsp; По %d опытам: среднее %+.4g м "
+                        + "(расчётная ERD = %.4g м), разброс %.4g м "
+                        + "(расчётная ERS = %.4g м).",
+                        n, mean, r.getRangeDynamic(), sd, r.getRangeRandom()));
+            }
+        }
+        if (measured == InputData.Measured.BOTH) {
+            sb.append("&nbsp; Рисунок измерений и эта сводка построены по одним "
+                    + "измерениям дальности, без измерений скорости, поэтому "
+                    + "с ERD и ERS таблицы (совместная обработка дальности "
+                    + "и скорости) они не совпадают.");
         }
         if (!r.isInsideInterval()) {
             sb.append("&nbsp; Выборка выходит за интервал измерений.");
@@ -407,7 +451,7 @@ public class ResultsPanel extends javax.swing.JPanel {
 
     /** Число в удобном для чтения виде: без лишних нулей. */
     private static String num(double v) {
-        if (Double.isNaN(v)) {
+        if (Double.isNaN(v) || Double.isInfinite(v)) {
             return "–";
         }
         if (v == Math.rint(v) && Math.abs(v) < 1e7) {
@@ -420,18 +464,39 @@ public class ResultsPanel extends javax.swing.JPanel {
         return String.format(Locale.ROOT, "%.4g", v);
     }
 
-    /** Модель таблицы ошибок. */
+    /**
+     * Модель таблицы ошибок.
+     *
+     * При измерении одной радиальной скорости дальность не наблюдаема:
+     * постоянная составляющая полинома (α0) измерениями скорости не
+     * определяется, и ошибки дальности получаются бесконечными. Поэтому
+     * в этом случае столбцы дальности не показываются.
+     */
     private static class Model extends AbstractTableModel {
 
         private static final String[] COLUMNS = {
             "№", "t, с", "ERD, м", "ERS, м", "ER, м", "EVD, м/с", "EVS, м/с", "EV, м/с"
         };
 
+        /** Номера показанных столбцов в полном наборе COLUMNS. */
+        private int[] shown = {0, 1, 2, 3, 4, 5, 6, 7};
+
         private List<ErrorRow> rows;
 
         void setRows(List<ErrorRow> rows) {
             this.rows = rows;
             fireTableDataChanged();
+        }
+
+        /** Задаёт состав столбцов по измеряемым параметрам. */
+        void setMeasured(InputData.Measured measured) {
+            int[] next = measured == InputData.Measured.VELOCITY
+                    ? new int[] {0, 1, 5, 6, 7}
+                    : new int[] {0, 1, 2, 3, 4, 5, 6, 7};
+            if (!java.util.Arrays.equals(next, shown)) {
+                shown = next;
+                fireTableStructureChanged();
+            }
         }
 
         ErrorRow row(int i) {
@@ -445,18 +510,18 @@ public class ResultsPanel extends javax.swing.JPanel {
 
         @Override
         public int getColumnCount() {
-            return COLUMNS.length;
+            return shown.length;
         }
 
         @Override
         public String getColumnName(int c) {
-            return COLUMNS[c];
+            return COLUMNS[shown[c]];
         }
 
         @Override
         public Object getValueAt(int r, int c) {
             ErrorRow e = rows.get(r);
-            switch (c) {
+            switch (shown[c]) {
                 case 0: return String.valueOf(r + 1);
                 case 1: return num(e.getTime());
                 case 2: return num(e.getRangeDynamic());

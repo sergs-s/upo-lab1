@@ -108,6 +108,13 @@ public final class Validation {
                     "При измерении радиальной скорости СКО измерения скорости должно быть "
                     + "больше нуля.", true));
         }
+        if (d.getMeasured() == InputData.Measured.VELOCITY && d.getDegree() == 0) {
+            issues.add(new Issue("degree",
+                    "При измерении одной радиальной скорости полином нулевой степени "
+                    + "ничего не оценивает: скорость берётся из коэффициента при первой "
+                    + "степени, а дальность по измерениям скорости не определяется. "
+                    + "В таблице результатов будут одни прочерки.", false));
+        }
 
         if (d.getMeasurer() == InputData.Measurer.GROUND) {
             if (d.getOrbitHeight() <= 0) {
