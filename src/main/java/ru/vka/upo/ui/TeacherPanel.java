@@ -354,6 +354,11 @@ public class TeacherPanel extends javax.swing.JPanel {
         owner.showCard(MainFrame.CARD_LOGIN);
     }
 
+    /** Журнал обучающихся: просмотр и удаление записей. */
+    private void btnJournalActionPerformed(java.awt.event.ActionEvent evt) {
+        JournalFrame.show(this, owner.getJournalKeeper().getJournal());
+    }
+
     private void btnInputActionPerformed(java.awt.event.ActionEvent evt) {
         owner.showCard(MainFrame.CARD_INPUT);
     }
@@ -470,6 +475,7 @@ public class TeacherPanel extends javax.swing.JPanel {
         lblInfo = new javax.swing.JLabel();
         scrTable = new javax.swing.JScrollPane();
         lblCount = new javax.swing.JLabel();
+        btnJournal = new javax.swing.JButton();
         btnInput = new javax.swing.JButton();
         btnBack = new javax.swing.JButton();
 
@@ -503,6 +509,13 @@ public class TeacherPanel extends javax.swing.JPanel {
         lblInfo.setText(" ");
 
         lblCount.setText(" ");
+
+        btnJournal.setText("Журнал обучающихся");
+        btnJournal.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnJournalActionPerformed(evt);
+            }
+        });
 
         btnInput.setText("Ввод данных вручную");
         btnInput.addActionListener(new java.awt.event.ActionListener() {
@@ -550,6 +563,8 @@ public class TeacherPanel extends javax.swing.JPanel {
                         .addGap(0, 0, Short.MAX_VALUE)
                         .addComponent(lblCount, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(btnJournal, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(btnInput, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(btnBack, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
@@ -580,6 +595,7 @@ public class TeacherPanel extends javax.swing.JPanel {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(lblCount)
+                    .addComponent(btnJournal)
                     .addComponent(btnInput)
                     .addComponent(btnBack))
                 .addContainerGap())
@@ -591,6 +607,7 @@ public class TeacherPanel extends javax.swing.JPanel {
     private javax.swing.JButton btnCharts;
     private javax.swing.JButton btnCompute;
     private javax.swing.JButton btnInput;
+    private javax.swing.JButton btnJournal;
     private javax.swing.JButton btnSave;
     private javax.swing.JComboBox cmbAnchorC;
     private javax.swing.JComboBox cmbMode;

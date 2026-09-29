@@ -177,11 +177,21 @@ public class WelcomePanel extends javax.swing.JPanel {
             owner.setStatus("Вариант не назначен: вернитесь к вводу своих данных.");
             return;
         }
-        if (Settings.testEnabled()) {
+        Integer score = owner.getStudent().getTestScore();
+        if (owner.getJournalKeeper().isActive() && score != null
+                && score >= ru.vka.upo.model.QuestionBank.PASS_MARK) {
+            // контроль уже пройден (работа восстановлена из журнала
+            // обучающихся или продолжается): повторно он не проводится
+            owner.showCard(MainFrame.CARD_INPUT);
+        } else if (Settings.testEnabled()) {
             owner.showCard(MainFrame.CARD_TEST);
         } else {
             // входной контроль отключён настройкой test.enabled – экран
-            // контроля пропускается, оценка в отчёте не появится
+            // контроля пропускается, оценка в отчёте не появится; работа
+            // сохраняется в журнал обучающихся без оценки
+            if (!owner.getJournalKeeper().isActive()) {
+                owner.getJournalKeeper().begin(null);
+            }
             owner.showCard(MainFrame.CARD_INPUT);
         }
     }//GEN-LAST:event_btnStartActionPerformed

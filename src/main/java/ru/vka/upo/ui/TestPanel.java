@@ -105,6 +105,9 @@ public class TestPanel extends javax.swing.JPanel {
         sb.append("Оценка: ").append(score).append('.').append('\n').append('\n');
         sb.append(verdict);
 
+        // запись журнала обучающихся создаётся при любом исходе контроля:
+        // и с положительной, и с неудовлетворительной оценкой
+        owner.getJournalKeeper().begin(score);
         if (session.isPassed()) {
             owner.getStudent().setTestScore(score);
             JOptionPane.showMessageDialog(this, sb.toString(),

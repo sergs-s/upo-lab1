@@ -59,6 +59,9 @@ public class MainFrame extends javax.swing.JFrame {
         // раскладку карт задаём здесь: в конструкторе форм панель остаётся пустым
         // контейнером, а экраны добавляются программой
         pnlCards.setLayout(new CardLayout());
+        // журнал обучающихся заводится до экранов: первый же показ экрана
+        // (showCard в конце этого метода) к нему обращается
+        journalKeeper = new JournalKeeper(this);
         loginPanel = new LoginPanel(this);
         welcomePanel = new WelcomePanel(this);
         testPanel = new TestPanel(this);
@@ -120,6 +123,8 @@ public class MainFrame extends javax.swing.JFrame {
                 "Выход", javax.swing.JOptionPane.YES_NO_OPTION,
                 javax.swing.JOptionPane.QUESTION_MESSAGE, null, options, options[1]);
         if (answer == 0) {
+            // работа сохраняется в журнал обучающихся до закрытия окна
+            journalKeeper.shutdown();
             dispose();
             System.exit(0);
         }
@@ -128,6 +133,7 @@ public class MainFrame extends javax.swing.JFrame {
     /** Показывает экран с заданным именем. */
     public final void showCard(String name) {
         ((CardLayout) pnlCards.getLayout()).show(pnlCards, name);
+        currentCard = name;
         if (CARD_LOGIN.equals(name)) {
             loginPanel.onShown();
         } else if (CARD_WELCOME.equals(name)) {
@@ -142,6 +148,36 @@ public class MainFrame extends javax.swing.JFrame {
             notebookPanel.onShown();
         } else if (CARD_TEACHER.equals(name)) {
             teacherPanel.onShown();
+        }
+        journalKeeper.onCard(name);
+    }
+
+    /** Экран, показанный последним. */
+    private String currentCard = "";
+
+    /** Журнал обучающихся: сохранение и восстановление работы. */
+    private JournalKeeper journalKeeper;
+
+    JournalKeeper getJournalKeeper() {
+        return journalKeeper;
+    }
+
+    /** Сохраняет работу в журнал обучающихся, если она изменилась. */
+    public void saveJournal() {
+        if (journalKeeper != null) {
+            journalKeeper.save();
+        }
+    }
+
+    /** Подставляет восстановленные из журнала данные в поля экрана ввода. */
+    void restoreInputFields(InputData d, VariantTable.Variant v) {
+        inputPanel.restore(d, v);
+    }
+
+    /** Переносит в тетрадь то, что введено на открытой странице тетради. */
+    void storeNotebookPage() {
+        if (CARD_NOTEBOOK.equals(currentCard)) {
+            notebookPanel.store();
         }
     }
 
@@ -191,6 +227,7 @@ public class MainFrame extends javax.swing.JFrame {
      */
     public void syncModeParams(InputData d) {
         inputPanel.applyModeParams(d);
+        saveJournal();
     }
 
     /**

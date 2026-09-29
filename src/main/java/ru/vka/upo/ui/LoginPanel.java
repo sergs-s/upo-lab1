@@ -3,9 +3,11 @@ package ru.vka.upo.ui;
 import java.awt.Font;
 import javax.swing.ButtonGroup;
 import javax.swing.JComponent;
+import javax.swing.JOptionPane;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
+import ru.vka.upo.model.JournalRecord;
 import ru.vka.upo.model.Settings;
 import ru.vka.upo.model.Student;
 import ru.vka.upo.model.VariantTable;
@@ -175,7 +177,46 @@ public class LoginPanel extends javax.swing.JPanel {
         if (s == null) {
             return;
         }
+        JournalKeeper journal = owner.getJournalKeeper();
+        JournalRecord record = journal.find(s);
+        if (record != null && record.isFailed()) {
+            // неудовлетворительная оценка: повторный контроль – только
+            // после того, как преподаватель удалит запись из журнала
+            JOptionPane.showMessageDialog(this, "Входной контроль ранее не пройден (оценка "
+                    + record.getScore() + "). Повторить его можно только с разрешения "
+                    + "преподавателя.", "Вход", JOptionPane.WARNING_MESSAGE);
+            owner.setStatus("Входной контроль ранее не пройден: обратитесь к преподавателю.");
+            return;
+        }
+        if (record != null) {
+            int typed = s.getListNumber();
+            String card = journal.restore(record);
+            StringBuilder sb = new StringBuilder();
+            if (record.getScore() != null) {
+                sb.append("Работа восстановлена: входной контроль пройден ранее, оценка ")
+                  .append(record.getScore()).append(". Продолжайте с того места, "
+                          + "где остановились.");
+            } else if (MainFrame.CARD_WELCOME.equals(card)) {
+                sb.append("Работа восстановлена. Прежде чем продолжить, пройдите "
+                        + "входной контроль.");
+            } else {
+                sb.append("Работа восстановлена. Продолжайте с того места, "
+                        + "где остановились.");
+            }
+            if (typed != record.getListNumber()) {
+                sb.append("\n\nНомер по списку взят из журнала: ")
+                  .append(record.getListNumber()).append(" (введён ").append(typed)
+                  .append("), вариант ").append(owner.getStudent().getVariantNumber())
+                  .append('.');
+            }
+            JOptionPane.showMessageDialog(this, sb.toString(), "Вход",
+                    JOptionPane.INFORMATION_MESSAGE);
+            owner.setStatus(owner.getStudent().toString());
+            owner.showCard(card);
+            return;
+        }
         owner.setStudent(s);
+        journal.onLogin(s);
         owner.setStatus(s.toString());
         owner.showCard(s.isTeacher() ? MainFrame.CARD_TEACHER : MainFrame.CARD_WELCOME);
     }

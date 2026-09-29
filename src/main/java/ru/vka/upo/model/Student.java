@@ -72,6 +72,14 @@ public class Student {
         return variant;
     }
 
+    /**
+     * Назначает вариант задания помимо номера по списку: при восстановлении
+     * работы из журнала обучающихся вариант берётся из записи.
+     */
+    public void setVariant(VariantTable.Variant variant) {
+        this.variant = variant;
+    }
+
     /** Номер назначенного варианта или ноль, если он не назначен. */
     public int getVariantNumber() {
         return variant == null ? 0 : variant.getNumber();

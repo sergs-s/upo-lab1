@@ -120,7 +120,7 @@ public final class Settings {
     private static final String[] KNOWN_KEYS = {
         "teacher.password", "error.mode", "window.fullscreen",
         "test.enabled", "notebook.transfer", "noise.montecarlo", "noise.trials",
-        "item.c.anchor"
+        "item.c.anchor", "test.journal"
     };
 
     /** Значение настройки или заданное значение по умолчанию. */
@@ -223,6 +223,22 @@ public final class Settings {
      */
     public static boolean testEnabled() {
         String v = get("test.enabled", "true").trim().toLowerCase();
+        return !(v.equals("false") || v.equals("0") || v.equals("нет") || v.equals("off"));
+    }
+
+    /**
+     * Ведётся ли журнал обучающихся, заданный настройкой test.journal. По
+     * умолчанию (true либо настройка не задана) программа запоминает
+     * обучающегося, его оценку за входной контроль и всю его работу в папке
+     * «БД» рядом с программой (см. {@link Journal}): после вылета или
+     * закрытия программы повторно проходить контроль не нужно, работа
+     * продолжается с того же места, а получивший неудовлетворительную
+     * оценку к контролю повторно не допускается, пока преподаватель не
+     * удалит его запись. При false журнал не ведётся, не читается и на
+     * работу не влияет.
+     */
+    public static boolean journal() {
+        String v = get("test.journal", "true").trim().toLowerCase();
         return !(v.equals("false") || v.equals("0") || v.equals("нет") || v.equals("off"));
     }
 

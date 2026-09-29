@@ -172,7 +172,7 @@ public class NotebookPanel extends javax.swing.JPanel {
     }
 
     /** Сохраняет то, что обучающийся ввёл на текущей странице. */
-    private void store() {
+    void store() {
         Notebook.Page p = page();
         p.setConclusion(txtConclusion.getText());
         Object v = spnSourceRow.getValue();
@@ -183,6 +183,7 @@ public class NotebookPanel extends javax.swing.JPanel {
         if (d instanceof Number && item() != Notebook.Item.A) {
             owner.getNotebook().setChosenDegree(((Number) d).intValue());
         }
+        owner.saveJournal();
     }
 
     /**
@@ -367,6 +368,7 @@ public class NotebookPanel extends javax.swing.JPanel {
         chart.clear();
         chart.setMessage("Заполните таблицу и нажмите «Построить график»");
         lblCheck.setText("Числа этого пункта стёрты");
+        owner.saveJournal();
     }
 
     private void btnBackActionPerformed(java.awt.event.ActionEvent evt) {
@@ -403,6 +405,8 @@ public class NotebookPanel extends javax.swing.JPanel {
                     + chooser.getSelectedFile().getName());
             owner.setStatus("Отчёт сохранён в файл "
                     + chooser.getSelectedFile().getAbsolutePath());
+            // работа завершена полностью – запись журнала больше не нужна
+            owner.getJournalKeeper().finishIfComplete();
         } catch (IOException | RuntimeException e) {
             JOptionPane.showMessageDialog(this,
                     "Записать отчёт не удалось: " + e.getMessage(),
@@ -594,6 +598,9 @@ public class NotebookPanel extends javax.swing.JPanel {
             }
             l.setSuspicious(false);
             fireTableRowsUpdated(r, r);
+            if (owner != null) {
+                owner.saveJournal();
+            }
         }
 
         private static Double parse(Object value) {

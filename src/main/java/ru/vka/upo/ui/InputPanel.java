@@ -95,6 +95,23 @@ public class InputPanel extends javax.swing.JPanel {
         revalidateData();
     }
 
+    /**
+     * Подставляет в поля исходные данные, восстановленные из журнала
+     * обучающихся, и запоминает вариант как уже подставленный: при показе
+     * экрана данные варианта поверх восстановленных не пишутся.
+     */
+    public void restore(InputData d, VariantTable.Variant v) {
+        updating = true;
+        try {
+            cmbVariant.setSelectedItem(v);
+        } finally {
+            updating = false;
+        }
+        show(d);
+        appliedVariant = v;
+        revalidateData();
+    }
+
     /** Подставляет в поля данные варианта, сохраняя параметры режима обработки. */
     private void applyVariant(VariantTable.Variant v) {
         InputData d = v.toInputData();
