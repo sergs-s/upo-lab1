@@ -24,7 +24,6 @@ import java.awt.geom.Ellipse2D;
 import java.awt.geom.Line2D;
 import java.awt.geom.Path2D;
 import java.awt.geom.Rectangle2D;
-import java.awt.image.BufferedImage;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.Locale;
@@ -100,7 +99,7 @@ public class SmoothingFrame extends JFrame {
     private final RangeChart chart = new RangeChart();
     private final FormulaPanel formulas = new FormulaPanel();
     private final TableModel tableModel = new TableModel();
-    private final JTable table = new JTable(tableModel);
+    private final JTable table = new MergedTable(tableModel);
     /** Строка СКО по участкам – отдельный компонент, легко убрать. */
     private final JLabel stats = new JLabel();
     private final JLabel counter = new JLabel();
@@ -214,6 +213,7 @@ public class SmoothingFrame extends JFrame {
         }
         applySpeed();
         reset();
+        fitColumns();
     }
 
     /** Открыто ли вызвавшее окно в полноэкранном режиме программы. */
@@ -350,7 +350,7 @@ public class SmoothingFrame extends JFrame {
             sb.append("<td align=right>").append(s < smoothed() ? num(model.residualRms(s)) : "–")
               .append("</td>");
         }
-        sb.append("</tr><tr><td><font color='#C0392B'>истинная − полином</font></td>");
+        sb.append("</tr><tr><td><font color='#C0392B'>истинная − полином (аналог ER)</font></td>");
         for (int s = 0; s < SmoothingModel.SEGMENTS; s++) {
             sb.append("<td align=right><font color='#C0392B'>")
               .append(s < smoothed() ? num(model.errorRms(s)) : "–").append("</font></td>");
@@ -743,41 +743,38 @@ public class SmoothingFrame extends JFrame {
 
     /**
      * Под графиком: общий вид полинома и полином последнего сглаженного
-     * участка с числами. Формулы набираются {@link MathText}.
+     * участка с числами. Строки рисуются прямо на панели и измеряются тем
+     * же контекстом рисования, поэтому ничего не налезает и не обрезается;
+     * нижние индексы набраны уменьшенным шрифтом со сдвигом вниз. Если
+     * строка не помещается по ширине, шрифт уменьшается.
      */
     private class FormulaPanel extends JPanel {
 
         private static final long serialVersionUID = 1L;
-        private static final int SIZE = 15;
+        private static final float SIZE = 15f;
 
-        private BufferedImage general;
-        private BufferedImage current;
-        private String note = "";
+        /** Строки: чётные элементы – обычный текст, нечётные – нижние индексы. */
+        private final String[] general = {
+            "Полином 1-й степени:  R*(t) = α", "0", " + α", "1", "·t,  t – от начала участка"};
+        private String[] current;
 
         FormulaPanel() {
             setBackground(Color.WHITE);
-            general = MathText.render("Полином 1-й степени:  R*(t) = \\alpha_{0} + \\alpha_{1}"
-                    + "·t,  t – от начала участка", SIZE);
+            setPreferredSize(new Dimension(100, 54));
         }
 
         void update() {
             int s = smoothed();
             if (s == 0) {
                 current = null;
-                note = "Полином участка появится после 10-го измерения";
             } else {
                 double[] c = model.coefficients(s - 1);
                 int from = (s - 1) * SmoothingModel.SEGMENT + 1;
                 String sign = c[1] < 0 ? " − " : " + ";
-                current = MathText.render("Участок " + s + " (измерения " + from + "–"
+                current = new String[] {"Участок " + s + " (измерения " + from + "–"
                         + (from + SmoothingModel.SEGMENT - 1) + "):  R*(t) = " + num(c[0])
-                        + sign + num(Math.abs(c[1])) + "·t, м  (t в секундах)", SIZE);
-                note = "";
+                        + sign + num(Math.abs(c[1])) + "·t, м  (t в секундах)"};
             }
-            int h = general.getHeight() / MathText.SCALE
-                    + (current != null ? current.getHeight() / MathText.SCALE : 22) + 6;
-            setPreferredSize(new Dimension(100, h));
-            revalidate();
             repaint();
         }
 
@@ -785,35 +782,167 @@ public class SmoothingFrame extends JFrame {
         protected void paintComponent(Graphics g0) {
             super.paintComponent(g0);
             Graphics2D g = (Graphics2D) g0.create();
-            g.setRenderingHint(RenderingHints.KEY_INTERPOLATION,
-                    RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-            int y = 2;
-            y += drawScaled(g, general, 6, y);
+            g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
+                    RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+            g.setColor(Color.BLACK);
+            drawLine(g, general, 20);
             if (current != null) {
-                drawScaled(g, current, 6, y);
+                drawLine(g, current, 44);
             } else {
                 g.setColor(Color.GRAY);
                 g.setFont(getFont().deriveFont(Font.PLAIN, 12f));
-                g.drawString(note, 12, y + 15);
+                g.drawString("Полином участка появится после 10-го измерения", 8, 44);
             }
             g.dispose();
         }
 
-        /** Рисует формулу, при нехватке ширины уменьшая её; возвращает высоту. */
-        private int drawScaled(Graphics2D g, BufferedImage img, int x, int y) {
-            double k = 1.0 / MathText.SCALE;
-            double fit = (getWidth() - 2.0 * x) / (img.getWidth() * k);
-            if (fit < 1) {
-                k *= fit;
+        /** Строка с нижними индексами; при нехватке места шрифт уменьшается. */
+        private void drawLine(Graphics2D g, String[] runs, int baseline) {
+            int room = getWidth() - 16;
+            float size = SIZE;
+            Font main = new Font(Font.SERIF, Font.PLAIN, Math.round(size));
+            while (size > 8f && width(g, runs, main) > room) {
+                size -= 0.5f;
+                main = new Font(Font.SERIF, Font.PLAIN, 1).deriveFont(size);
             }
-            int w = (int) Math.round(img.getWidth() * k);
-            int h = (int) Math.round(img.getHeight() * k);
-            g.drawImage(img, x, y, w, h, null);
-            return h;
+            Font sub = main.deriveFont(size * 0.7f);
+            float x = 8;
+            for (int i = 0; i < runs.length; i++) {
+                boolean isSub = i % 2 == 1;
+                g.setFont(isSub ? sub : main);
+                g.drawString(runs[i], x, baseline + (isSub ? size * 0.25f : 0));
+                x += (float) g.getFontMetrics().getStringBounds(runs[i], g).getWidth();
+            }
+        }
+
+        private double width(Graphics2D g, String[] runs, Font main) {
+            Font sub = main.deriveFont(main.getSize2D() * 0.7f);
+            double w = 0;
+            for (int i = 0; i < runs.length; i++) {
+                w += g.getFontMetrics(i % 2 == 1 ? sub : main).getStringBounds(runs[i], g).getWidth();
+            }
+            return w;
         }
     }
 
     // ------------------------------------------------------- таблица
+
+    /** Столбцы таблицы. */
+    private static final int COL_NUMBER = 0;
+    private static final int COL_TIME = 1;
+    private static final int COL_TRUE = 2;
+    private static final int COL_MEASURED = 3;
+    private static final int COL_NOISE = 4;
+    /** Сам полином участка: одна ячейка на 10 строк. */
+    private static final int COL_POLY = 5;
+    private static final int COL_POLY_VALUE = 6;
+    private static final int COL_RESIDUAL = 7;
+    private static final int COL_ERROR = 8;
+
+    /** Две строки записи полинома участка s: «R*(t) = α0» и «± α1·t, м». */
+    private String[] polynomialText(int s) {
+        double[] c = model.coefficients(s);
+        return new String[] {"R*(t) = " + num(c[0]),
+            (c[1] < 0 ? "− " : "+ ") + num(Math.abs(c[1])) + "·t, м"};
+    }
+
+    /** Ширина столбцов № и t – по числам в них, с небольшими зазорами. */
+    private void fitColumns() {
+        java.awt.FontMetrics fm = table.getFontMetrics(table.getFont());
+        int[][] fixed = {
+            {COL_NUMBER, Math.max(fm.stringWidth("60"), fm.stringWidth("№")) + 14},
+            {COL_TIME, Math.max(fm.stringWidth(num(model.duration())), fm.stringWidth("t, с")) + 14}
+        };
+        for (int[] f : fixed) {
+            javax.swing.table.TableColumn col = table.getColumnModel().getColumn(f[0]);
+            col.setMinWidth(f[1]);
+            col.setMaxWidth(f[1]);
+            col.setPreferredWidth(f[1]);
+        }
+        javax.swing.table.TableColumn poly = table.getColumnModel().getColumn(COL_POLY);
+        int w = fm.stringWidth("R*(t) = " + num(-9999999.9)) + 16;
+        poly.setMinWidth(w);
+        poly.setPreferredWidth(w);
+    }
+
+    /**
+     * Таблица, в которой столбец «Полином» объединяет 10 строк участка:
+     * поверх обычных ячеек рисуется одна общая ячейка с записью полинома.
+     */
+    private class MergedTable extends JTable {
+
+        private static final long serialVersionUID = 1L;
+
+        MergedTable(AbstractTableModel m) {
+            super(m);
+        }
+
+        /**
+         * Высота шапки – по самому высокому заголовку. Стандартная шапка
+         * меряет только первый столбец с обычным отрисовщиком (здесь «№»
+         * в одну строку) и срезала бы двухстрочные заголовки.
+         */
+        @Override
+        protected javax.swing.table.JTableHeader createDefaultTableHeader() {
+            return new javax.swing.table.JTableHeader(columnModel) {
+                private static final long serialVersionUID = 1L;
+
+                @Override
+                public Dimension getPreferredSize() {
+                    Dimension d = super.getPreferredSize();
+                    javax.swing.table.TableCellRenderer r = getDefaultRenderer();
+                    for (int c = 0; c < getColumnModel().getColumnCount(); c++) {
+                        Object v = getColumnModel().getColumn(c).getHeaderValue();
+                        Component k = r.getTableCellRendererComponent(getTable(), v,
+                                false, false, -1, c);
+                        d.height = Math.max(d.height, k.getPreferredSize().height);
+                    }
+                    return d;
+                }
+            };
+        }
+
+        @Override
+        protected void paintComponent(Graphics g0) {
+            super.paintComponent(g0);
+            Graphics2D g = (Graphics2D) g0.create();
+            g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
+                    RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+            java.awt.Rectangle clip = g.getClipBounds();
+            int n = SmoothingModel.SEGMENT;
+            for (int s = 0; s < SmoothingModel.SEGMENTS; s++) {
+                java.awt.Rectangle r = getCellRect(s * n, COL_POLY, true)
+                        .union(getCellRect(s * n + n - 1, COL_POLY, true));
+                if (clip != null && !r.intersects(clip)) {
+                    continue;
+                }
+                g.setColor(s % 2 == 0 ? Color.WHITE : SEGMENT_BAND);
+                g.fillRect(r.x, r.y, r.width - 1, r.height - 1);
+                g.setColor(Color.GRAY);
+                g.fillRect(r.x, r.y + r.height - 3, r.width - 1, 2);
+                if (s >= smoothed()) {
+                    continue;
+                }
+                String[] lines = polynomialText(s);
+                java.awt.FontMetrics fm = g.getFontMetrics(getFont());
+                java.awt.FontMetrics small = g.getFontMetrics(getFont().deriveFont(
+                        getFont().getSize2D() - 1f));
+                String note = "t – от начала участка, с";
+                int lh = fm.getHeight();
+                int y = r.y + (r.height - 3 * lh) / 2 + fm.getAscent();
+                g.setFont(getFont());
+                g.setColor(Color.BLACK);
+                for (String line : lines) {
+                    g.drawString(line, r.x + (r.width - fm.stringWidth(line)) / 2, y);
+                    y += lh;
+                }
+                g.setFont(small.getFont());
+                g.setColor(Color.GRAY);
+                g.drawString(note, r.x + Math.max(2, (r.width - small.stringWidth(note)) / 2), y);
+            }
+            g.dispose();
+        }
+    }
 
     /** Таблица чисел: 60 строк, заполняются по мере измерений и сглаживания. */
     private class TableModel extends AbstractTableModel {
@@ -821,11 +950,13 @@ public class SmoothingFrame extends JFrame {
         private static final long serialVersionUID = 1L;
 
         private final String[] names = {
-            "<html><center>№<br>измерения</center></html>",
+            "№",
+            "t, с",
             red("Истинная<br>дальность, м"),
             "<html><center>Измеренная<br>дальность, м</center></html>",
             red("Измеренная −<br>истинная, м"),
-            "<html><center>Полином<br>R*(t) = α<sub>0</sub> + α<sub>1</sub>·t, м</center></html>",
+            "<html><center>Полином<br>R*(t) = α<sub>0</sub> + α<sub>1</sub>·t</center></html>",
+            "<html><center>Значение<br>полинома, м</center></html>",
             "<html><center>Полином −<br>измеренная, м</center></html>",
             red("Истинная −<br>полином, м")
         };
@@ -856,24 +987,26 @@ public class SmoothingFrame extends JFrame {
 
         @Override
         public Object getValueAt(int r, int c) {
-            if (c == 0) {
+            if (c == COL_NUMBER) {
                 return String.valueOf(r + 1);
             }
-            if (r >= shown) {
+            if (r >= shown || c == COL_POLY) {
                 return "";
             }
             switch (c) {
-                case 1: return num(model.trueRange(r));
-                case 2: return num(model.measured(r));
-                case 3: return num(model.noise(r));
+                case COL_TIME: return num(model.fromEntry(model.time(r)));
+                case COL_TRUE: return num(model.trueRange(r));
+                case COL_MEASURED: return num(model.measured(r));
+                case COL_NOISE: return num(model.noise(r));
                 default: break;
             }
             if (SmoothingModel.segmentOf(r) >= smoothed()) {
                 return "";
             }
             switch (c) {
-                case 4: return num(model.polynomial(SmoothingModel.segmentOf(r), model.time(r)));
-                case 5: return num(model.residual(r));
+                case COL_POLY_VALUE:
+                    return num(model.polynomial(SmoothingModel.segmentOf(r), model.time(r)));
+                case COL_RESIDUAL: return num(model.residual(r));
                 default: return num(model.error(r));
             }
         }
@@ -888,15 +1021,18 @@ public class SmoothingFrame extends JFrame {
         public Component getTableCellRendererComponent(JTable t, Object value,
                 boolean selected, boolean focus, int row, int column) {
             super.getTableCellRendererComponent(t, value, false, false, row, column);
-            setHorizontalAlignment(column == 0 ? SwingConstants.CENTER : SwingConstants.RIGHT);
-            setForeground(column == 1 || column == 3 || column == 6 ? HIDDEN : Color.BLACK);
+            setHorizontalAlignment(column == COL_NUMBER ? SwingConstants.CENTER : SwingConstants.RIGHT);
+            setForeground(column == COL_TRUE || column == COL_NOISE || column == COL_ERROR
+                    ? HIDDEN : Color.BLACK);
             setBackground(SmoothingModel.segmentOf(row) % 2 == 0 ? Color.WHITE : SEGMENT_BAND);
-            // утолщённая черта после каждого участка
+            // утолщённая черта после каждого участка; у узких столбцов
+            // № и t зазоры меньше
+            int pad = column == COL_NUMBER || column == COL_TIME ? 2 : 4;
             setBorder((row + 1) % SmoothingModel.SEGMENT == 0
                     ? BorderFactory.createCompoundBorder(
                             BorderFactory.createMatteBorder(0, 0, 2, 0, Color.GRAY),
-                            BorderFactory.createEmptyBorder(0, 4, 0, 4))
-                    : BorderFactory.createEmptyBorder(0, 4, 0, 4));
+                            BorderFactory.createEmptyBorder(0, pad, 0, pad))
+                    : BorderFactory.createEmptyBorder(0, pad, 0, pad));
             return this;
         }
     }
