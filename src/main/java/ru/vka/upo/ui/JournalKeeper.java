@@ -169,6 +169,14 @@ final class JournalKeeper {
         return active != null;
     }
 
+    /**
+     * Сохранится ли работа при выходе: запись ведётся и последняя попытка
+     * записи в журнал удалась.
+     */
+    boolean keepsWork() {
+        return journal != null && active != null && !failed;
+    }
+
     /** Смена экрана: запоминается и сохраняется вместе с работой. */
     void onCard(String card) {
         screen = card;

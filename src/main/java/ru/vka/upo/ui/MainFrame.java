@@ -117,9 +117,14 @@ public class MainFrame extends javax.swing.JFrame {
     /** Запрашивает подтверждение и завершает работу программы. */
     private void confirmExit() {
         Object[] options = {"Завершить", "Продолжить работу"};
+        // если работа обучающегося ведётся в журнале, она не пропадает:
+        // предупреждать о потере результатов незачем
+        String note = journalKeeper.keepsWork()
+                ? "Работа сохраняется в журнале обучающихся: при следующем входе\n"
+                  + "с теми же фамилией и группой её можно будет продолжить."
+                : "Результаты расчёта и записи рабочей тетради не сохраняются.";
         int answer = javax.swing.JOptionPane.showOptionDialog(this,
-                "Завершить работу с программой?\n"
-                + "Результаты расчёта и записи рабочей тетради не сохраняются.",
+                "Завершить работу с программой?\n" + note,
                 "Выход", javax.swing.JOptionPane.YES_NO_OPTION,
                 javax.swing.JOptionPane.QUESTION_MESSAGE, null, options, options[1]);
         if (answer == 0) {
