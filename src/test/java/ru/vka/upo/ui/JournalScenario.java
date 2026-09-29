@@ -85,7 +85,7 @@ public final class JournalScenario {
     private static int relaunch() throws Exception {
         Path dir = Files.createTempDirectory("journal-scenario");
         Files.write(dir.resolve("settings.properties"), ("test.enabled = true\n"
-                + "test.journal = true\nwindow.fullscreen = false\n").getBytes(StandardCharsets.UTF_8));
+                + "test.journal = true\nwindow.fullscreen = false\nteacher.password = kaf33\n").getBytes(StandardCharsets.UTF_8));
         String java = System.getProperty("java.home") + File.separator + "bin" + File.separator + "java";
         ProcessBuilder pb = new ProcessBuilder(java, "-Dfile.encoding=UTF-8", "-cp",
                 System.getProperty("java.class.path"), JournalScenario.class.getName(), "--child");
@@ -114,7 +114,7 @@ public final class JournalScenario {
         f.getNotebookPanel().store();
         String before = snapshot(f.getNotebook());
         close(f);
-        Journal j = new Journal(Journal.defaultFolder(), "kaf33");
+        Journal j = Journal.standard();
         check("папка журнала «БД» создана", Files.isDirectory(Journal.defaultFolder())
                 && Journal.defaultFolder().getFileName().toString().equals("БД"));
         JournalRecord rec = j.load("Иванов И.И.", "101");

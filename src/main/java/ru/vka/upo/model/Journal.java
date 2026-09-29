@@ -100,13 +100,16 @@ public final class Journal {
 
     /**
      * Журнал программы: папка рядом с программой, ключ из пароля
-     * преподавателя; null, если журнал отключён настройкой test.journal.
+     * преподавателя (его хэша); null, если журнал отключён настройкой
+     * test.journal или пароль преподавателя не задан – без него оценку
+     * защитить нечем.
      */
     public static Journal standard() {
-        if (!Settings.journal()) {
+        String secret = Settings.teacherSecret();
+        if (!Settings.journal() || secret == null) {
             return null;
         }
-        return new Journal(defaultFolder(), Settings.teacherPassword());
+        return new Journal(defaultFolder(), secret);
     }
 
     /**

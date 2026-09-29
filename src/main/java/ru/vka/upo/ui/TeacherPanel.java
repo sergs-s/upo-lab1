@@ -359,6 +359,53 @@ public class TeacherPanel extends javax.swing.JPanel {
         JournalFrame.show(this, owner.getJournalKeeper().getJournal());
     }
 
+    /**
+     * Смена пароля преподавателя: текущий пароль, новый и его повтор. Ключ
+     * журнала обучающихся получается из пароля, поэтому при смене все
+     * записи журнала удаляются – об этом предупреждается заранее.
+     */
+    private void btnPasswordActionPerformed(java.awt.event.ActionEvent evt) {
+        javax.swing.JPasswordField current = new javax.swing.JPasswordField(16);
+        javax.swing.JPasswordField fresh = new javax.swing.JPasswordField(16);
+        javax.swing.JPasswordField repeat = new javax.swing.JPasswordField(16);
+        int records = owner.getJournalKeeper().recordCount();
+        javax.swing.JPanel form = new javax.swing.JPanel(new java.awt.GridLayout(0, 1, 0, 4));
+        form.add(new javax.swing.JLabel("<html><body style='width:380px'><b>Внимание.</b> Оценки в журнале обучающихся "
+                + "защищены паролем преподавателя. После смены пароля все записи "
+                + "журнала (сейчас их " + records + ") станут недействительными и будут "
+                + "удалены: обучающимся, прервавшим работу, придётся начать её "
+                + "заново.</html>"));
+        form.add(new javax.swing.JLabel("Текущий пароль:"));
+        form.add(current);
+        form.add(new javax.swing.JLabel("Новый пароль:"));
+        form.add(fresh);
+        form.add(new javax.swing.JLabel("Новый пароль ещё раз:"));
+        form.add(repeat);
+        int answer = javax.swing.JOptionPane.showConfirmDialog(this, form, "Смена пароля преподавателя",
+                javax.swing.JOptionPane.OK_CANCEL_OPTION, javax.swing.JOptionPane.WARNING_MESSAGE);
+        if (answer != javax.swing.JOptionPane.OK_OPTION) {
+            return;
+        }
+        String message;
+        String newPassword = new String(fresh.getPassword()).trim();
+        if (!Settings.checkTeacherPassword(new String(current.getPassword()))) {
+            message = "Текущий пароль указан неверно. Пароль не изменён.";
+        } else if (newPassword.isEmpty()) {
+            message = "Новый пароль не может быть пустым. Пароль не изменён.";
+        } else if (!newPassword.equals(new String(repeat.getPassword()).trim())) {
+            message = "Новый пароль и его повтор не совпадают. Пароль не изменён.";
+        } else if (!ru.vka.upo.model.TeacherPassword.change(newPassword)) {
+            message = "Записать новый пароль в файл настроек не удалось "
+                    + "(нет доступа на запись). Пароль не изменён.";
+        } else {
+            int removed = owner.getJournalKeeper().passwordChanged();
+            message = "Пароль изменён. Удалено записей журнала: " + removed + ".";
+        }
+        javax.swing.JOptionPane.showMessageDialog(this, message, "Смена пароля преподавателя",
+                javax.swing.JOptionPane.INFORMATION_MESSAGE);
+        owner.setStatus(message);
+    }
+
     private void btnInputActionPerformed(java.awt.event.ActionEvent evt) {
         owner.showCard(MainFrame.CARD_INPUT);
     }
@@ -476,6 +523,7 @@ public class TeacherPanel extends javax.swing.JPanel {
         scrTable = new javax.swing.JScrollPane();
         lblCount = new javax.swing.JLabel();
         btnJournal = new javax.swing.JButton();
+        btnPassword = new javax.swing.JButton();
         btnInput = new javax.swing.JButton();
         btnBack = new javax.swing.JButton();
 
@@ -514,6 +562,13 @@ public class TeacherPanel extends javax.swing.JPanel {
         btnJournal.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnJournalActionPerformed(evt);
+            }
+        });
+
+        btnPassword.setText("Сменить пароль");
+        btnPassword.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnPasswordActionPerformed(evt);
             }
         });
 
@@ -565,6 +620,8 @@ public class TeacherPanel extends javax.swing.JPanel {
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(btnJournal, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(btnPassword, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(btnInput, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(btnBack, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
@@ -596,6 +653,7 @@ public class TeacherPanel extends javax.swing.JPanel {
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(lblCount)
                     .addComponent(btnJournal)
+                    .addComponent(btnPassword)
                     .addComponent(btnInput)
                     .addComponent(btnBack))
                 .addContainerGap())
@@ -608,6 +666,7 @@ public class TeacherPanel extends javax.swing.JPanel {
     private javax.swing.JButton btnCompute;
     private javax.swing.JButton btnInput;
     private javax.swing.JButton btnJournal;
+    private javax.swing.JButton btnPassword;
     private javax.swing.JButton btnSave;
     private javax.swing.JComboBox cmbAnchorC;
     private javax.swing.JComboBox cmbMode;
