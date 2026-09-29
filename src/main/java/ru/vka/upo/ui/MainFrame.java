@@ -193,6 +193,14 @@ public class MainFrame extends javax.swing.JFrame {
         inputPanel.applyModeParams(d);
     }
 
+    /**
+     * Передаёт экрану преподавателя исходные данные, заданные вручную на
+     * экране ввода: расчёт всех пунктов пойдёт по ним, а не по варианту.
+     */
+    public void setTeacherManualData(InputData d) {
+        teacherPanel.setManualData(d);
+    }
+
     /** Развёрнуто ли главное окно на весь экран (настройка window.fullscreen). */
     public boolean isFullScreenMode() {
         return fullScreen;

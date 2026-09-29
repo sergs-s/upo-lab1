@@ -39,6 +39,16 @@ public class TeacherPanel extends javax.swing.JPanel {
     private final MainFrame owner;
     private final Model model = new Model();
 
+    /**
+     * Строка списка «Вариант» для исходных данных, заданных вручную на экране
+     * ввода (кнопка «Ввод данных вручную», возврат – «Автоматический расчёт»).
+     * Появляется в списке после первого такого возврата.
+     */
+    private static final String MANUAL = "данные, заданные вручную";
+
+    /** Исходные данные, заданные вручную, или null, если их не задавали. */
+    private InputData manual;
+
     public TeacherPanel(MainFrame owner) {
         this.owner = owner;
         initComponents();
@@ -109,12 +119,40 @@ public class TeacherPanel extends javax.swing.JPanel {
         owner.setStatus("Режим преподавателя: расчёт всех пунктов задания сразу");
     }
 
-    private void btnComputeActionPerformed(java.awt.event.ActionEvent evt) {
+    /**
+     * Принимает исходные данные, заданные вручную на экране ввода: они
+     * добавляются в список «Вариант» отдельной строкой и выбираются в нём,
+     * так что расчёт всех пунктов и зависимости строятся именно по ним.
+     */
+    public void setManualData(InputData d) {
+        manual = d.clone();
+        DefaultComboBoxModel<Object> vm = (DefaultComboBoxModel<Object>) cmbVariant.getModel();
+        if (vm.getIndexOf(MANUAL) < 0) {
+            vm.insertElementAt(MANUAL, 0);
+        }
+        cmbVariant.setSelectedItem(MANUAL);
+    }
+
+    /**
+     * Исходные данные для расчёта по выбранной строке списка «Вариант»
+     * или null, если ничего не выбрано.
+     */
+    private InputData selectedData() {
         Object sel = cmbVariant.getSelectedItem();
-        if (!(sel instanceof VariantTable.Variant)) {
+        if (sel instanceof VariantTable.Variant) {
+            return ((VariantTable.Variant) sel).toInputData();
+        }
+        if (MANUAL.equals(sel) && manual != null) {
+            return manual.clone();
+        }
+        return null;
+    }
+
+    private void btnComputeActionPerformed(java.awt.event.ActionEvent evt) {
+        InputData base = selectedData();
+        if (base == null) {
             return;
         }
-        InputData base = ((VariantTable.Variant) sel).toInputData();
         Object modeSel = cmbMode.getSelectedItem();
         Processor.Mode mode = modeSel instanceof Processor.Mode
                 ? (Processor.Mode) modeSel : Processor.Mode.ANCHOR;
@@ -258,11 +296,10 @@ public class TeacherPanel extends javax.swing.JPanel {
      * по пункту а – по наименьшей полной ошибке дальности.
      */
     private void btnChartsActionPerformed(java.awt.event.ActionEvent evt) {
-        Object sel = cmbVariant.getSelectedItem();
-        if (!(sel instanceof VariantTable.Variant)) {
+        InputData base = selectedData();
+        if (base == null) {
             return;
         }
-        InputData base = ((VariantTable.Variant) sel).toInputData();
         Object modeSel = cmbMode.getSelectedItem();
         Processor.Mode mode = modeSel instanceof Processor.Mode
                 ? (Processor.Mode) modeSel : Processor.Mode.ANCHOR;
@@ -283,11 +320,12 @@ public class TeacherPanel extends javax.swing.JPanel {
             return;
         }
         Object sel = cmbVariant.getSelectedItem();
-        int number = sel instanceof VariantTable.Variant
-                ? ((VariantTable.Variant) sel).getNumber() : 0;
+        String name = sel instanceof VariantTable.Variant
+                ? "вариант " + ((VariantTable.Variant) sel).getNumber()
+                : "свои данные";
         JFileChooser chooser = new JFileChooser();
         chooser.setDialogTitle("Куда сохранить таблицу");
-        chooser.setSelectedFile(new File("Расчёт ЛР1 вариант " + number + ".csv"));
+        chooser.setSelectedFile(new File("Расчёт ЛР1 " + name + ".csv"));
         if (chooser.showSaveDialog(this) != JFileChooser.APPROVE_OPTION) {
             return;
         }

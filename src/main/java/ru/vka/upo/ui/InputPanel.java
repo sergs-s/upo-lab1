@@ -716,6 +716,14 @@ public class InputPanel extends javax.swing.JPanel {
      * остаются в полях экрана до следующего изменения.
      */
     private void btnTeacherBackActionPerformed(java.awt.event.ActionEvent evt) {
+        // заданные вручную данные передаются экрану преподавателя, если они
+        // допустимы; иначе там остаётся то, что было выбрано раньше
+        StringBuilder errors = new StringBuilder();
+        InputData d = collect(errors);
+        if (errors.length() == 0 && Validation.isComputable(Validation.check(d))) {
+            owner.setInputData(d);
+            owner.setTeacherManualData(d);
+        }
         owner.showCard(MainFrame.CARD_TEACHER);
     }
 
