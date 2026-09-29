@@ -37,7 +37,7 @@ public class ModeParamsPanel extends javax.swing.JPanel {
     }
 
     private void customize() {
-        spnDegree.setModel(new SpinnerNumberModel(2, 0, 12, 1));
+        spnDegree.setModel(new SpinnerNumberModel(0, 0, 12, 1));
         spnSample.setModel(new SpinnerNumberModel(49, 2, 999, 1));
         spnAnchor.setModel(new SpinnerNumberModel(25, 1, 999, 1));
 

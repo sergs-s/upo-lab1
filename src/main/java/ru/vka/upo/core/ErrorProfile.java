@@ -21,6 +21,11 @@ import ru.vka.upo.model.InputData;
  * ошибок коэффициентов, a(t) – вектор степеней нормированного времени.
  * В момент привязки Δ и σ равны ERD и ERS из соответствующей строки
  * таблицы, поэтому рисунок прямо связан с расчётом.
+ *
+ * Так же вычисляется ход ошибок оценивания радиальной скорости: по
+ * производной полинома дальности либо, при измерении одной скорости, по
+ * собственному полиному скорости (как в {@link Processor}); в момент
+ * привязки они равны EVD и EVS.
  */
 public class ErrorProfile {
 
@@ -31,6 +36,8 @@ public class ErrorProfile {
     private final double scale;
     private final double[] coeffs;
     private final double[][] covariance;
+    /** Измеряется одна скорость: полином описывает саму скорость. */
+    private final boolean velocityOnly;
 
     public ErrorProfile(InputData data, Trajectory trajectory, double windowStart) {
         this.trajectory = trajectory;
@@ -42,6 +49,7 @@ public class ErrorProfile {
         this.anchorTime = windowStart + (data.getAnchor() - 1) * step;
         this.scale = Math.max((n - 1) * step / 2.0, 1e-9);
 
+        this.velocityOnly = data.getMeasured() == InputData.Measured.VELOCITY;
         boolean useRange = data.getMeasured().hasRange();
         boolean useSpeed = data.getMeasured().hasVelocity();
         int measurements = n * ((useRange ? 1 : 0) + (useSpeed ? 1 : 0));
@@ -66,7 +74,9 @@ public class ErrorProfile {
             }
             if (useSpeed) {
                 s[idx] = ti - anchorTime;
-                velocity[idx] = true;
+                // при одной скорости она сглаживается собственным полиномом:
+                // измерение входит как значение, а не как производная
+                velocity[idx] = !velocityOnly;
                 weight[idx] = wSpeed;
                 truth[idx] = trajectory.rangeRate(ti);
                 idx++;
@@ -82,6 +92,9 @@ public class ErrorProfile {
 
     /** Значение аппроксимирующего полинома по незашумлённым измерениям, м. */
     public double fitted(double t) {
+        if (velocityOnly) {
+            return Double.NaN;
+        }
         return Polynomial.value(coeffs, (t - anchorTime) / scale);
     }
 
@@ -92,7 +105,60 @@ public class ErrorProfile {
 
     /** Среднее квадратическое отклонение оценки в произвольный момент, м. */
     public double random(double t) {
+        if (velocityOnly) {
+            return Double.NaN;
+        }
         return ErrorFormulas.sigma(covariance, (t - anchorTime) / scale);
+    }
+
+    /**
+     * Оценка радиальной скорости по незашумлённым измерениям, м/с; NaN, если
+     * при полиноме дальности нулевой степени скорость не оценивается.
+     */
+    public double speedFitted(double t) {
+        double x = (t - anchorTime) / scale;
+        if (velocityOnly) {
+            return Polynomial.value(coeffs, x);
+        }
+        if (coeffs.length < 2) {
+            return Double.NaN;
+        }
+        return Polynomial.derivative(coeffs, x) / scale;
+    }
+
+    /** Динамическая ошибка оценивания скорости в произвольный момент, м/с. */
+    public double speedDynamic(double t) {
+        return trajectory.rangeRate(t) - speedFitted(t);
+    }
+
+    /**
+     * Среднее квадратическое отклонение оценки скорости в произвольный момент,
+     * м/с: σ²(t) = gᵀ(t) K g(t), где g(t) – вектор производных степеней
+     * нормированного времени, делённых на масштаб (при одной скорости –
+     * сами степени).
+     */
+    public double speedRandom(double t) {
+        double x = (t - anchorTime) / scale;
+        if (velocityOnly) {
+            return ErrorFormulas.sigma(covariance, x);
+        }
+        int k = covariance.length;
+        if (k < 2) {
+            return Double.NaN;
+        }
+        double[] g = new double[k];
+        double pw = 1.0;              // x^(j-1)
+        for (int j = 1; j < k; j++) {
+            g[j] = j * pw / scale;
+            pw *= x;
+        }
+        double v = 0;
+        for (int i = 0; i < k; i++) {
+            for (int j = 0; j < k; j++) {
+                v += g[i] * covariance[i][j] * g[j];
+            }
+        }
+        return Math.sqrt(Math.max(v, 0.0));
     }
 
     /** Наибольшее по модулю значение динамической ошибки на интервале, м. */

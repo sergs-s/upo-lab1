@@ -13,7 +13,6 @@ import java.awt.geom.Line2D;
 import java.awt.geom.Path2D;
 import javax.swing.JPanel;
 import ru.vka.upo.core.Realization;
-import ru.vka.upo.model.InputData;
 
 /**
  * Ход дальности на интервале усреднения: истинная кривая, отсчёты с шумом,
@@ -37,6 +36,8 @@ public class FitView extends JPanel {
     private static final Color ANCHOR = new Color(0x2E, 0x86, 0x4B);
 
     private Realization realization;
+    /** Показывается ход радиальной скорости, а не дальности. */
+    private boolean speed;
 
     public FitView() {
         setBackground(BG);
@@ -44,7 +45,16 @@ public class FitView extends JPanel {
     }
 
     public void show(Realization r) {
+        show(r, false);
+    }
+
+    /**
+     * Показывает реализацию: ход дальности или, при {@code speed}, ход
+     * радиальной скорости с её измерениями и оценкой.
+     */
+    public void show(Realization r, boolean speed) {
         this.realization = r;
+        this.speed = speed;
         repaint();
     }
 
@@ -63,13 +73,11 @@ public class FitView extends JPanel {
             g.dispose();
             return;
         }
-        if (r.getData().getMeasured() == InputData.Measured.VELOCITY) {
-            // рисунок показывает измерения дальности и проведённый по ним
-            // полином; при измерении одной скорости таких измерений нет
+        if (speed && Double.isNaN(r.speedValue(r.getAnchorTime()))) {
             g.setColor(Color.GRAY);
             int y = getHeight() / 2 - 8;
-            g.drawString("Измеряется только радиальная скорость:", 12, y);
-            g.drawString("измерений дальности нет, рисунок не строится", 12, y + 16);
+            g.drawString("При m = 0 полином дальности", 12, y);
+            g.drawString("не даёт оценки скорости", 12, y + 16);
             g.dispose();
             return;
         }
@@ -80,9 +88,11 @@ public class FitView extends JPanel {
         int bottom = getHeight() - 48;
 
         double[] t = r.getTime();
-        double[] truth = r.getTruth();
-        double[] meas = r.getMeasured();
-        double[] fit = r.getFitted();
+        double[] truth = speed ? r.getSpeedTruth() : r.getTruth();
+        // измерения наносятся, только если эта величина измеряется
+        boolean hasMeas = speed ? r.hasSpeedMeasurements() : r.hasRangeMeasurements();
+        double[] meas = hasMeas ? (speed ? r.getSpeedMeasured() : r.getMeasured()) : truth;
+        double[] fit = speed ? r.getSpeedFitted() : r.getFitted();
 
         double t0 = r.getWindowStart();
         double t1 = Math.max(r.getWindowEnd(), t0 + 1e-9);
@@ -110,12 +120,17 @@ public class FitView extends JPanel {
         g.draw(new Line2D.Double(left, bottom, right, bottom));
 
         g.setColor(Color.DARK_GRAY);
+        // формат подписей скорости – по цене деления, чтобы соседние
+        // подписи различались
+        double tick = (hi - lo) / 4;
+        String spd = tick >= 10 ? "%.0f" : tick >= 1 ? "%.1f" : tick >= 0.1 ? "%.2f" : "%.3f";
         for (int k = 0; k <= 4; k++) {
             double v = hi - (hi - lo) * k / 4;
             int y = top + (bottom - top) * k / 4;
-            g.drawString(String.format(Locale.ROOT, "%.1f", v / 1000.0), 6, y + 4);
+            g.drawString(speed ? String.format(Locale.ROOT, spd, v)
+                    : String.format(Locale.ROOT, "%.1f", v / 1000.0), 6, y + 4);
         }
-        g.drawString("R, км", 6, top - 9);
+        g.drawString(speed ? "V, м/с" : "R, км", 6, top - 9);
         g.drawString(String.format(Locale.ROOT, "%.2f", t0), left - 10, bottom + 15);
         g.drawString(String.format(Locale.ROOT, "%.2f", t1), right - 26, bottom + 15);
         g.drawString("t, с", (left + right) / 2, bottom + 15);
@@ -126,7 +141,8 @@ public class FitView extends JPanel {
         for (int i = 0; i <= steps; i++) {
             double tt = t0 + (t1 - t0) * i / steps;
             double x = xOf(tt, t0, t1, left, right);
-            double y = yOf(r.getTrajectory().range(tt), lo, hi, top, bottom);
+            double y = yOf(speed ? r.getTrajectory().rangeRate(tt)
+                    : r.getTrajectory().range(tt), lo, hi, top, bottom);
             if (i == 0) {
                 truePath.moveTo(x, y);
             } else {
@@ -145,7 +161,7 @@ public class FitView extends JPanel {
         for (int i = 0; i <= steps; i++) {
             double tt = t0 + (t1 - t0) * i / steps;
             double x = xOf(tt, t0, t1, left, right);
-            double y = yOf(r.value(tt), lo, hi, top, bottom);
+            double y = yOf(speed ? r.speedValue(tt) : r.value(tt), lo, hi, top, bottom);
             if (i == 0) {
                 fitPath.moveTo(x, y);
             } else {
@@ -158,7 +174,7 @@ public class FitView extends JPanel {
         g.setStroke(new BasicStroke(1f));
 
         // невязки и отсчёты
-        for (int i = 0; i < t.length; i++) {
+        for (int i = 0; hasMeas && i < t.length; i++) {
             double x = xOf(t[i], t0, t1, left, right);
             double ym = yOf(meas[i], lo, hi, top, bottom);
             double yf = yOf(fit[i], lo, hi, top, bottom);
@@ -180,10 +196,17 @@ public class FitView extends JPanel {
         // условные обозначения: сдвигаем по действительной ширине надписей,
         // иначе они наезжают друг на друга
         int[] pen = {left, bottom + 28};
-        ErrorView.legend(g, pen, right, TRUE_CURVE, "истинная дальность");
-        ErrorView.legend(g, pen, right, FIT_CURVE, "полином степени "
-                + Math.min(r.getData().getDegree(), r.getTime().length - 1));
-        ErrorView.legend(g, pen, right, POINTS, "измерения");
+        ErrorView.legend(g, pen, right, TRUE_CURVE,
+                speed ? "истинная скорость" : "истинная дальность");
+        // при измерении дальности скорость оценивается производной
+        // полинома дальности, при одной скорости – её собственным полиномом
+        boolean derivative = speed && r.hasRangeMeasurements();
+        ErrorView.legend(g, pen, right, FIT_CURVE, (derivative
+                ? "производная полинома, m = " : "полином степени ")
+                + r.getDegree());
+        if (hasMeas) {
+            ErrorView.legend(g, pen, right, POINTS, "измерения");
+        }
         g.dispose();
     }
 

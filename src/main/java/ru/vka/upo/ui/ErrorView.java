@@ -35,6 +35,8 @@ public class ErrorView extends JPanel {
     private static final Color ZERO = new Color(0x66, 0x66, 0x66);
 
     private ErrorProfile profile;
+    /** Показывается ход ошибок оценивания скорости, а не дальности. */
+    private boolean speed;
     /** Пояснение вместо рисунка, если ход ошибок дальности не определён. */
     private String unavailable;
 
@@ -44,9 +46,23 @@ public class ErrorView extends JPanel {
     }
 
     public void show(ErrorProfile p) {
+        show(p, false);
+    }
+
+    /** Показывает ход ошибок дальности или, при {@code speed}, скорости. */
+    public void show(ErrorProfile p, boolean speed) {
         this.profile = p;
+        this.speed = speed;
         this.unavailable = null;
         repaint();
+    }
+
+    private double dyn(ErrorProfile p, double t) {
+        return speed ? p.speedDynamic(t) : p.dynamic(t);
+    }
+
+    private double sig(ErrorProfile p, double t) {
+        return speed ? p.speedRandom(t) : p.random(t);
     }
 
     /**
@@ -100,8 +116,8 @@ public class ErrorView extends JPanel {
         double hi = 0;
         for (int i = 0; i <= steps; i++) {
             double t = t0 + (t1 - t0) * i / steps;
-            double dyn = p.dynamic(t);
-            double sig = p.random(t);
+            double dyn = dyn(p, t);
+            double sig = sig(p, t);
             lo = Math.min(lo, Math.min(dyn, -sig));
             hi = Math.max(hi, Math.max(dyn, sig));
         }
@@ -140,10 +156,10 @@ public class ErrorView extends JPanel {
             int y = top + (bottom - top) * k / 4;
             g.drawString(String.format(Locale.ROOT, format, v), 6, y + 4);
         }
-        g.drawString("ошибка, м", 6, top - 9);
+        g.drawString(speed ? "ошибка, м/с" : "ошибка, м", 6, top - 9);
         String note = String.format(Locale.ROOT,
-                "в привязке: |Δ| = %s м, σ = %s м",
-                fmt(Math.abs(p.dynamic(p.getAnchorTime()))), fmt(p.random(p.getAnchorTime())));
+                speed ? "в привязке: |Δ| = %s м/с, σ = %s м/с" : "в привязке: |Δ| = %s м, σ = %s м",
+                fmt(Math.abs(dyn(p, p.getAnchorTime()))), fmt(sig(p, p.getAnchorTime())));
         int nw = g.getFontMetrics().stringWidth(note);
         g.drawString(note, Math.max(left + 4, right - nw), top - 9);
         g.drawString(String.format(Locale.ROOT, "%.2f", t0), left - 10, bottom + 15);
@@ -155,7 +171,7 @@ public class ErrorView extends JPanel {
         for (int i = 0; i <= steps; i++) {
             double t = t0 + (t1 - t0) * i / steps;
             double x = xOf(t, t0, t1, left, right);
-            double y = yOf(p.random(t), lo, hi, top, bottom);
+            double y = yOf(sig(p, t), lo, hi, top, bottom);
             if (i == 0) {
                 band.moveTo(x, y);
             } else {
@@ -164,7 +180,7 @@ public class ErrorView extends JPanel {
         }
         for (int i = steps; i >= 0; i--) {
             double t = t0 + (t1 - t0) * i / steps;
-            band.lineTo(xOf(t, t0, t1, left, right), yOf(-p.random(t), lo, hi, top, bottom));
+            band.lineTo(xOf(t, t0, t1, left, right), yOf(-sig(p, t), lo, hi, top, bottom));
         }
         band.closePath();
         g.setColor(BAND);
@@ -183,7 +199,7 @@ public class ErrorView extends JPanel {
         for (int i = 0; i <= steps; i++) {
             double t = t0 + (t1 - t0) * i / steps;
             double x = xOf(t, t0, t1, left, right);
-            double y = yOf(p.dynamic(t), lo, hi, top, bottom);
+            double y = yOf(dyn(p, t), lo, hi, top, bottom);
             if (i == 0) {
                 path.moveTo(x, y);
             } else {
@@ -198,7 +214,7 @@ public class ErrorView extends JPanel {
         // момент привязки: именно эти значения выведены в таблице
         double ta = p.getAnchorTime();
         double xa = xOf(ta, t0, t1, left, right);
-        double ya = yOf(p.dynamic(ta), lo, hi, top, bottom);
+        double ya = yOf(dyn(p, ta), lo, hi, top, bottom);
         g.setColor(ANCHOR);
         g.setStroke(new BasicStroke(1f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER,
                 10f, new float[] {3f, 3f}, 0f));

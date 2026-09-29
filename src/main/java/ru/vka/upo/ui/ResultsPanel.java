@@ -57,6 +57,21 @@ public class ResultsPanel extends javax.swing.JPanel {
      * по опытам сходится к динамической составляющей, разброс – к случайной.
      */
     private final List<Double> trials = new ArrayList<>();
+    /** То же для ошибок оценки радиальной скорости. */
+    private final List<Double> speedTrials = new ArrayList<>();
+
+    /**
+     * Переключатель иллюстраций между дальностью и скоростью: виден при
+     * измерении обоих параметров (при одной скорости иллюстрации строятся
+     * для скорости, при одной дальности – для дальности).
+     */
+    private final javax.swing.JToggleButton btnPictureSpeed =
+            new javax.swing.JToggleButton("показать скорость");
+    private final javax.swing.JPanel pictureBar =
+            new javax.swing.JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT, 4, 0));
+    /** Последняя показанная реализация и строка таблицы. */
+    private Realization lastRealization;
+    private ErrorRow lastRow;
 
     public ResultsPanel(MainFrame owner) {
         this.owner = owner;
@@ -108,12 +123,27 @@ public class ResultsPanel extends javax.swing.JPanel {
         }
         lblWrite.setText(writeHint(InputData.Measured.RANGE));
 
-        pnlPictures.setLayout(new GridLayout(1, 3, 8, 0));
+        javax.swing.JPanel pictures = new javax.swing.JPanel(new GridLayout(1, 3, 8, 0));
+        btnPictureSpeed.setFocusable(false);
+        btnPictureSpeed.setToolTipText("Показать на рисунках дальность или радиальную скорость");
+        btnPictureSpeed.addActionListener(new java.awt.event.ActionListener() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                btnPictureSpeed.setText(btnPictureSpeed.isSelected()
+                        ? "показать дальность" : "показать скорость");
+                render();
+            }
+        });
+        pictureBar.add(btnPictureSpeed);
+        pictureBar.setVisible(false);
+        pnlPictures.setLayout(new BorderLayout());
+        pnlPictures.add(pictureBar, BorderLayout.NORTH);
+        pnlPictures.add(pictures, BorderLayout.CENTER);
         javax.swing.JPanel geometryPanel = wrap(geometry, GROUND_TITLE);
         geometryBorder = (javax.swing.border.TitledBorder) geometryPanel.getBorder();
-        pnlPictures.add(geometryPanel);
-        pnlPictures.add(wrap(fit, "Измерения и аппроксимирующий полином"));
-        pnlPictures.add(wrap(errors, "Ход ошибок по интервалу усреднения"));
+        pictures.add(geometryPanel);
+        pictures.add(wrap(fit, "Измерения и аппроксимирующий полином"));
+        pictures.add(wrap(errors, "Ход ошибок по интервалу усреднения"));
 
         lblMode.setFont(lblMode.getFont().deriveFont(Font.BOLD));
         lblCaption.setText(CAPTION);
@@ -163,9 +193,11 @@ public class ResultsPanel extends javax.swing.JPanel {
             + "коэффициенты полинома определены из условия минимума суммы квадратов "
             + "отклонений измерений от кривой (серые отрезки). На правом рисунке "
             + "показан ход обеих составляющих ошибки по интервалу усреднения: "
-            + "динамическая Δ(t) есть разность истинной дальности и полинома "
-            + "при отсутствии шума, коридор ±σ(t) отвечает случайной составляющей. "
-            + "В момент привязки они равны ERD и ERS выбранной строки таблицы; "
+            + "динамическая Δ(t) есть разность истинного значения параметра "
+            + "(дальности или радиальной скорости) и его оценки при отсутствии "
+            + "шума, коридор ±σ(t) отвечает случайной составляющей. "
+            + "В момент привязки они равны ERD и ERS (для скорости – EVD и EVS) "
+            + "выбранной строки таблицы; "
             + "при переносе привязки внутри выборки эти значения меняются, "
             + "и наименьшими они оказываются вблизи середины интервала.</html>";
 
@@ -209,84 +241,95 @@ public class ResultsPanel extends javax.swing.JPanel {
             return;
         }
         ErrorRow r = model.row(row);
-        Realization real = new Realization(data, trajectory, r.getWindowStart(), seed);
+        lastRow = r;
+        lastRealization = new Realization(data, trajectory, r.getWindowStart(), seed);
+        if (!nextTrial) {
+            trials.clear();
+            speedTrials.clear();
+        }
+        trials.add(lastRealization.error());
+        speedTrials.add(lastRealization.speedError());
+        render();
+    }
+
+    /** Показывается ли на иллюстрациях радиальная скорость. */
+    private boolean showsSpeed() {
+        InputData.Measured m = data.getMeasured();
+        if (m == InputData.Measured.VELOCITY) {
+            return true;
+        }
+        return m == InputData.Measured.BOTH && btnPictureSpeed.isSelected();
+    }
+
+    /** Перерисовывает иллюстрации и сводку по уже смоделированным опытам. */
+    private void render() {
+        if (lastRealization == null || lastRow == null) {
+            return;
+        }
+        boolean both = data.getMeasured() == InputData.Measured.BOTH;
+        if (pictureBar.isVisible() != both) {
+            pictureBar.setVisible(both);
+            pnlPictures.revalidate();
+        }
+        boolean speed = showsSpeed();
         geometryBorder.setTitle(data.getMeasurer() == InputData.Measurer.AIRBORNE
                 ? AIRBORNE_TITLE : GROUND_TITLE);
         pnlPictures.repaint();
-        geometry.show(data, trajectory, r.getTime());
-        fit.show(real);
-        boolean velocityOnly = data.getMeasured() == InputData.Measured.VELOCITY;
-        if (velocityOnly) {
-            // дальность при измерении одной скорости не наблюдаема: её ошибки
-            // бесконечны, и рисовать их ход бессмысленно
-            errors.showUnavailable("Измеряется только радиальная скорость:\n"
-                    + "дальность не оценивается, ход её ошибок не строится");
+        geometry.show(data, trajectory, lastRow.getTime());
+        fit.show(lastRealization, speed);
+        ErrorProfile profile = new ErrorProfile(data, trajectory, lastRow.getWindowStart());
+        if (speed && Double.isNaN(profile.speedRandom(profile.getAnchorTime()))) {
+            errors.showUnavailable("При m = 0 полином дальности\n"
+                    + "не даёт оценки скорости");
         } else {
-            errors.show(new ErrorProfile(data, trajectory, r.getWindowStart()));
+            errors.show(profile, speed);
         }
-        // отдельные реализации шума моделируются для измерений дальности
-        btnNoise.setEnabled(!velocityOnly);
-
-        if (!nextTrial) {
-            trials.clear();
-        }
-        trials.add(real.error());
-        lblNoise.setText(statistics(r));
+        lblNoise.setText(statistics(lastRow, speed));
     }
 
     /**
      * Сводка по накопленным реализациям: ошибка текущего опыта, среднее
-     * и разброс по всем опытам в сопоставлении с расчётными ERD и ERS.
+     * и разброс по всем опытам в сопоставлении с расчётными динамической
+     * и случайной ошибками (дальности или скорости – той величины, что
+     * показана на рисунках).
      */
-    private String statistics(ErrorRow r) {
-        InputData.Measured measured = data.getMeasured();
-        if (measured == InputData.Measured.VELOCITY) {
-            return "<html>Отдельные реализации шума показываются для измерений "
-                    + "дальности; при измерении одной радиальной скорости рисунка "
-                    + "измерений и сводки по опытам нет. В таблице приведены "
-                    + "характеристики ошибок оценивания скорости, от реализации "
-                    + "шума они не зависят.</html>";
-        }
-        int n = trials.size();
-        double current = trials.get(n - 1);
+    private String statistics(ErrorRow r, boolean speed) {
+        List<Double> list = speed ? speedTrials : trials;
+        String unit = speed ? "м/с" : "м";
+        String dName = speed ? "EVD" : "ERD";
+        String sName = speed ? "EVS" : "ERS";
+        double dCalc = speed ? r.getSpeedDynamic() : r.getRangeDynamic();
+        double sCalc = speed ? r.getSpeedRandom() : r.getRangeRandom();
+        int n = list.size();
+        double current = list.get(n - 1);
         StringBuilder sb = new StringBuilder("<html>");
-        sb.append(String.format(Locale.ROOT, "<b>Ошибка оценки в данной реализации: %+.4g м.</b>"
+        if (Double.isNaN(current)) {
+            sb.append("При m = 0 полином дальности не даёт оценки скорости.");
+            return sb.append("</html>").toString();
+        }
+        sb.append(String.format(Locale.ROOT, "<b>Ошибка оценки %s в данной реализации: %+.4g %s.</b>"
                 + " В таблице приведены характеристики ошибок, а не результат "
                 + "отдельного опыта, поэтому от реализации шума они не зависят.",
-                current));
+                speed ? "скорости" : "дальности", current, unit));
         if (n < 2) {
             sb.append("&nbsp; Нажмите «Другая реализация шума», чтобы увидеть, "
                     + "как эта ошибка меняется от опыта к опыту при неизменных "
                     + "характеристиках в таблице.");
         } else {
             double sum = 0;
-            for (double e : trials) {
+            for (double e : list) {
                 sum += e;
             }
             double mean = sum / n;
             double var = 0;
-            for (double e : trials) {
+            for (double e : list) {
                 var += (e - mean) * (e - mean);
             }
             double sd = Math.sqrt(var / (n - 1));
-            if (measured == InputData.Measured.BOTH) {
-                // реализация моделирует только измерения дальности, а таблица
-                // получена совместной обработкой дальности и скорости:
-                // сопоставлять их числа напрямую нельзя
-                sb.append(String.format(Locale.ROOT, "&nbsp; По %d опытам: среднее %+.4g м, "
-                        + "разброс %.4g м.", n, mean, sd));
-            } else {
-                sb.append(String.format(Locale.ROOT, "&nbsp; По %d опытам: среднее %+.4g м "
-                        + "(расчётная ERD = %.4g м), разброс %.4g м "
-                        + "(расчётная ERS = %.4g м).",
-                        n, mean, r.getRangeDynamic(), sd, r.getRangeRandom()));
-            }
-        }
-        if (measured == InputData.Measured.BOTH) {
-            sb.append("&nbsp; Рисунок измерений и эта сводка построены по одним "
-                    + "измерениям дальности, без измерений скорости, поэтому "
-                    + "с ERD и ERS таблицы (совместная обработка дальности "
-                    + "и скорости) они не совпадают.");
+            sb.append(String.format(Locale.ROOT, "&nbsp; По %d опытам: среднее %+.4g %s "
+                    + "(расчётная %s = %.4g %s), разброс %.4g %s "
+                    + "(расчётная %s = %.4g %s).",
+                    n, mean, unit, dName, dCalc, unit, sd, unit, sName, sCalc, unit));
         }
         if (!r.isInsideInterval()) {
             sb.append("&nbsp; Выборка выходит за интервал измерений.");

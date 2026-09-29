@@ -80,7 +80,7 @@ public class InputData implements Cloneable {
     private double sigmaVelocity = 0.01;
 
     /** Степень аппроксимирующего полинома m. */
-    private int degree = 2;
+    private int degree = 0;
     /** Объём выборки N. */
     private int sampleSize = 49;
     /** Шаг измерений Δt, с. */
