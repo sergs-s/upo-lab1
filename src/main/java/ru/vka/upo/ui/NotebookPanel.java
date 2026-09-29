@@ -243,7 +243,7 @@ public class NotebookPanel extends javax.swing.JPanel {
             // скорости при m = 0 не определены и не сверяются
             List<Notebook.Quantity> entered = new java.util.ArrayList<Notebook.Quantity>();
             for (Notebook.Quantity q : quantities()) {
-                if (q.isDefined(l.degree(it, chosen)) && l.isFilled(q)) {
+                if (q.isDefined(l.degree(it, chosen), measured()) && l.isFilled(q)) {
                     entered.add(q);
                 }
             }
@@ -343,7 +343,7 @@ public class NotebookPanel extends javax.swing.JPanel {
         ChartView.Series sr = new ChartView.Series("случайная " + q.getRandomName(), RANDOM);
         ChartView.Series st = new ChartView.Series("полная " + q.getTotalName(), TOTAL);
         for (Notebook.Line l : p.getLines()) {
-            if (!q.isDefined(l.degree(it, chosen)) || !l.isFilled(q)) {
+            if (!q.isDefined(l.degree(it, chosen), measured()) || !l.isFilled(q)) {
                 continue;
             }
             boolean bad = marks && l.isSuspicious();
@@ -508,7 +508,8 @@ public class NotebookPanel extends javax.swing.JPanel {
         /** Определена ли в строке ошибка величины столбца c. */
         private boolean defined(Notebook.Line l, int c) {
             int chosen = owner == null ? 2 : owner.getNotebook().getChosenDegree();
-            return quantity(c).isDefined(l.degree(item, chosen));
+            return quantity(c).isDefined(l.degree(item, chosen),
+                    owner == null ? InputData.Measured.RANGE : owner.getInputData().getMeasured());
         }
 
         @Override

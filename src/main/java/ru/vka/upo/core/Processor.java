@@ -178,6 +178,9 @@ public class Processor {
 
     /** Ошибки оценивания для выборки, начинающейся в момент windowStart. */
     public ErrorRow row(double windowStart) {
+        if (data.getMeasured() == InputData.Measured.VELOCITY) {
+            return velocityOnlyRow(windowStart);
+        }
         int n = data.getSampleSize();
         int m = data.getDegree();
         double t = data.getStep();
@@ -310,6 +313,94 @@ public class Processor {
         boolean inside = windowEnd <= data.getInterval() + 1e-9;
         return new ErrorRow(t0, windowStart, windowEnd,
                 Math.abs(dynamicRange), randomRange,
+                Math.abs(dynamicRate), randomRate, inside);
+    }
+
+    /**
+     * Ошибки оценивания при измерении одной радиальной скорости.
+     *
+     * Так же, как в прежней программе (сверено её прогонами), измерения
+     * скорости сглаживаются полиномом по времени, и степень m есть степень
+     * полинома самой скорости: при m = 0 оценка скорости – среднее
+     * арифметическое измерений выборки, её случайная ошибка σV/√N. Этим
+     * измерение одной скорости отличается от совместного измерения
+     * дальности и скорости, где m – степень полинома дальности, а скорость –
+     * его производная (степень полинома скорости там на единицу меньше).
+     *
+     * Дальность по одним измерениям скорости не определяется, поэтому её
+     * ошибки не определены (NaN). Прежняя программа печатала в этих столбцах
+     * нули.
+     *
+     * Способы вычисления динамической ошибки ({@link Mode}) и размещение
+     * выборок – те же, что при измерении дальности.
+     */
+    private ErrorRow velocityOnlyRow(double windowStart) {
+        int n = data.getSampleSize();
+        int m = data.getDegree();
+        double t = data.getStep();
+        double t0 = mode == Mode.ANCHOR
+                ? SampleWindows.anchorTime(windowStart, t, data.getAnchor())
+                : SampleWindows.legacyAnchorTime(windowStart, t, data.getAnchor());
+        double windowEnd = windowStart + (n - 1) * t;
+
+        // измерения скорости входят в систему как значения сглаживаемой
+        // величины (а не как производная полинома дальности)
+        double[] s = new double[n];
+        boolean[] asDerivative = new boolean[n];
+        double[] weight = new double[n];
+        double[] truth = new double[n];
+        double w = 1.0 / data.getSigmaVelocity();
+        for (int i = 0; i < n; i++) {
+            double ti = windowStart + i * t;
+            s[i] = ti - t0;
+            weight[i] = w;
+            truth[i] = trajectory.rangeRate(ti);
+        }
+
+        double scale = Math.max((n - 1) * t / 2.0, 1e-9);
+        LeastSquares lsq = LeastSquares.forPolynomial(s, asDerivative, weight, m, scale);
+        double randomRate = Math.sqrt(Math.max(lsq.covariance()[0][0], 0.0));
+
+        double[] sFit = s;
+        double tFit = t0;
+        if (mode != Mode.ANCHOR) {
+            // как и для дальности: базис от середины выборки
+            tFit = windowStart + (n - 1) * t / 2.0;
+            sFit = new double[n];
+            for (int i = 0; i < n; i++) {
+                sFit[i] = s[i] + (t0 - tFit);
+            }
+        }
+        double[] c = mode == Mode.LEGACY
+                ? NormalEquations.solve(sFit, truth, m, scale)
+                : (sFit == s ? lsq : LeastSquares.forPolynomial(sFit, asDerivative, weight, m, scale))
+                        .solve(truth, weight);
+        boolean inside = windowEnd <= data.getInterval() + 1e-9;
+
+        if (mode != Mode.ANCHOR) {
+            // прежняя программа: средняя квадратическая невязка по выборке
+            double sumV = 0;
+            for (int i = 0; i < n; i++) {
+                double ti = windowStart + i * t;
+                double x = (ti - tFit) / scale;
+                double dv = mode == Mode.LEGACY
+                        ? (float) trajectory.rangeRate(ti) - Polynomial.valueSingle(c, x)
+                        : trajectory.rangeRate(ti) - Polynomial.value(c, x);
+                sumV += dv * dv;
+            }
+            return new ErrorRow(t0, windowStart, windowEnd, Double.NaN, Double.NaN,
+                    Math.sqrt(sumV / n), randomRate, inside);
+        }
+
+        double dynamicRate = trajectory.rangeRate(t0) - c[0];
+        if (Settings.noiseMonteCarlo()) {
+            // первый коэффициент здесь и есть оценка скорости
+            double[] mc = monteCarlo(lsq, truth, weight, scale, m,
+                    trajectory.rangeRate(t0), 0.0);
+            dynamicRate = mc[0];
+            randomRate = mc[1];
+        }
+        return new ErrorRow(t0, windowStart, windowEnd, Double.NaN, Double.NaN,
                 Math.abs(dynamicRate), randomRate, inside);
     }
 

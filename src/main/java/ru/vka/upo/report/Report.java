@@ -108,7 +108,7 @@ public final class Report {
             for (Notebook.Quantity q : quantities) {
                 List<String[]> table = new ArrayList<>();
                 for (Notebook.Line l : page.getLines()) {
-                    boolean defined = q.isDefined(l.degree(item, chosen));
+                    boolean defined = q.isDefined(l.degree(item, chosen), measured);
                     table.add(new String[] {
                         num(l.getParameter()),
                         defined ? num(l.getDynamic(q)) : UNDEFINED,

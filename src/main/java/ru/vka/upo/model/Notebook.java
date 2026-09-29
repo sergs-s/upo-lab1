@@ -274,11 +274,15 @@ public class Notebook {
 
         /**
          * Определена ли ошибка этой величины при заданной степени полинома.
-         * Оценка скорости берётся из коэффициента при первой степени, поэтому
-         * при m = 0 она не определена.
+         *
+         * При измерении дальности (одной или вместе со скоростью) m – степень
+         * полинома дальности, оценка скорости берётся из коэффициента при
+         * первой степени, поэтому при m = 0 она не определена. При измерении
+         * одной скорости m – степень полинома самой скорости (как в прежней
+         * программе), и при m = 0 оценка скорости – среднее измерений.
          */
-        public boolean isDefined(int degree) {
-            return this == RANGE || degree >= 1;
+        public boolean isDefined(int degree, InputData.Measured measured) {
+            return this == RANGE || degree >= 1 || measured == InputData.Measured.VELOCITY;
         }
 
         /** Величины, ошибки которых выписываются при заданных измеряемых параметрах. */
@@ -455,14 +459,13 @@ public class Notebook {
 
         /**
          * Выписаны ли все числа, которые требуются при заданных измеряемых
-         * параметрах. Ошибки скорости при m = 0 не определены и не требуются;
-         * при измерении одной скорости такая строка поэтому пустая по
-         * существу и заполненной не считается.
+         * параметрах. Ошибки скорости при m = 0 и измерении дальности не
+         * определены и не требуются.
          */
         public boolean isComplete(InputData.Measured measured, Item item, int chosenDegree) {
             boolean any = false;
             for (Quantity q : Quantity.of(measured)) {
-                if (!q.isDefined(degree(item, chosenDegree))) {
+                if (!q.isDefined(degree(item, chosenDegree), measured)) {
                     continue;
                 }
                 if (!isFilled(q)) {
@@ -716,7 +719,7 @@ public class Notebook {
          */
         public boolean isReady(InputData.Measured measured, Item item, int chosenDegree) {
             for (Quantity q : Quantity.of(measured)) {
-                if (filledCount(q, item, chosenDegree) < 2) {
+                if (filledCount(q, item, chosenDegree, measured) < 2) {
                     return false;
                 }
             }
@@ -724,10 +727,11 @@ public class Notebook {
         }
 
         /** Число строк, где выписаны все три числа заданной величины. */
-        public int filledCount(Quantity q, Item item, int chosenDegree) {
+        public int filledCount(Quantity q, Item item, int chosenDegree,
+                InputData.Measured measured) {
             int filled = 0;
             for (Line l : lines) {
-                if (q.isDefined(l.degree(item, chosenDegree)) && l.isFilled(q)) {
+                if (q.isDefined(l.degree(item, chosenDegree), measured) && l.isFilled(q)) {
                     filled++;
                 }
             }

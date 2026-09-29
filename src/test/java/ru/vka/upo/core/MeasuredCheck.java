@@ -21,17 +21,19 @@ import ru.vka.upo.model.Notebook;
  * Проверяется:
  * <ol>
  *   <li>в выводимых столбцах нет NaN и бесконечностей, кроме ошибок
- *       скорости при m = 0 (они не определены и должны быть NaN);</li>
- *   <li>при измерении одной скорости ошибки дальности не конечны – поэтому
- *       их столбцы в интерфейсе и отчёте не показываются (если ядро когда-либо
- *       начнёт выдавать здесь конечные числа, проверка об этом скажет);</li>
+ *       скорости при m = 0, когда измеряется дальность (m – степень полинома
+ *       дальности, скорость при m = 0 не оценивается, должно быть NaN);</li>
+ *   <li>при измерении одной скорости ошибки дальности не определены (NaN),
+ *       а ошибки скорости определены при любой m, в том числе m = 0: там m –
+ *       степень полинома самой скорости, как в прежней программе;</li>
  *   <li>при измерении одной дальности числа совпадают с эталоном, снятым
  *       до доработки интерфейса под скорость (файл эталона).</li>
  * </ol>
- * Кроме того, выводится справочная сверка случайной ошибки скорости при
- * m = 1 с формулой σV/√N: при измерении одной скорости и полиноме первой
- * степени оценка скорости есть среднее N измерений. Расхождение с формулой
- * ошибкой проверки не считается – это замечание к расчётному ядру для автора.
+ * Кроме того, при измерении одной скорости результат сверяется с прогоном
+ * прежней программы (Obr rabot.exe под Wine, вариант 1: наземный
+ * измеритель, H = 1000 км, до трассы 50 км, σV = 0,1 м/с, N = 49,
+ * Δt = 0,1 с, M0 = 25, первая строка таблицы): EVS при m = 0…3 и EVD
+ * при m = 0 и 1 в режиме «как в прежней программе».
  *
  * Режим расчёта – по умолчанию «в момент привязки»; задаётся ключом
  * -Dmode=anchor | averaged | legacy.
@@ -81,6 +83,7 @@ public final class MeasuredCheck {
         int checked = 0;
         List<String> failures = new ArrayList<>();
         List<String> notes = new ArrayList<>();
+        legacyVelocity(failures, notes);
         List<String> rangeLines = new ArrayList<>();
 
         for (InputData.Measurer measurer : InputData.Measurer.values()) {
@@ -114,7 +117,6 @@ public final class MeasuredCheck {
                     }
                 }
             }
-            speedNote(notes, measurer);
         }
 
         System.out.printf("Режим расчёта: %s%n", MODE);
@@ -124,6 +126,9 @@ public final class MeasuredCheck {
             Files.createDirectories(file.toAbsolutePath().getParent());
             Files.write(file, rangeLines, StandardCharsets.UTF_8);
             System.out.printf("Эталон по дальности записан: %s (%d строк)%n", file, rangeLines.size());
+        } else if (MODE != Processor.Mode.ANCHOR) {
+            // эталон снят в режиме «в момент привязки»
+            System.out.println("Сверка с эталоном по дальности: только в режиме «в момент привязки»");
         } else if (!Files.exists(file)) {
             failures.add("нет файла эталона " + file);
         } else {
@@ -147,7 +152,7 @@ public final class MeasuredCheck {
 
         if (!notes.isEmpty()) {
             System.out.println();
-            System.out.println("Справочно (замечания к ядру, ошибкой проверки не считаются):");
+            System.out.println("Сверка с прежней программой (измеряется только скорость):");
             for (String n : notes) {
                 System.out.println("  " + n);
             }
@@ -187,15 +192,16 @@ public final class MeasuredCheck {
             for (double v : range) {
                 anyFinite |= finite(v);
             }
-            if (anyFinite && MODE == Processor.Mode.ANCHOR) {
+            if (anyFinite) {
                 failures.add(at + ": ошибки дальности при измерении одной скорости "
-                        + "оказались конечными – пересмотреть скрытие столбцов дальности");
+                        + "должны быть не определены (NaN)");
             }
         }
         // ошибки скорости выводятся при любом признаке (при одной дальности –
         // дифференцированием полинома); при m = 0 в режиме «в момент
         // привязки» они не определены и должны быть NaN
-        boolean undefined = degree == 0 && MODE == Processor.Mode.ANCHOR;
+        boolean undefined = degree == 0 && MODE == Processor.Mode.ANCHOR
+                && measured != InputData.Measured.VELOCITY;
         for (double v : speed) {
             if (undefined && !Double.isNaN(v)) {
                 failures.add(at + ": при m = 0 ошибка скорости должна быть не определена, а равна " + v);
@@ -209,22 +215,42 @@ public final class MeasuredCheck {
     }
 
     /**
-     * Справочная сверка: при измерении одной скорости и m = 1 оценка скорости
-     * есть среднее N измерений, её СКО должно быть σV/√N.
+     * Сверка с прежней программой при измерении одной скорости. Числа сняты
+     * прогоном Obr rabot.exe (признак траектории 1, признак скорости 1,
+     * вариант 1, σV = 0,1 м/с, N = 49, Δt = 0,1 с, M0 = 25), первая строка.
+     * Случайная составляющая от способа расчёта динамической не зависит и
+     * должна совпасть в любом режиме; динамическая сверяется в режиме
+     * «как в прежней программе» при m = 0 и 1 – при больших степенях там
+     * «полка» одинарной точности, совпадающая лишь по порядку величины.
      */
-    private static void speedNote(List<String> notes, InputData.Measurer measurer) {
-        InputData d = base(measurer, InputData.Measured.VELOCITY);
-        d.setDegree(1);
-        ErrorRow r = new Processor(d).setMode(Processor.Mode.ANCHOR).table().get(0);
-        int n = d.getSampleSize();
-        double expected = d.getSigmaVelocity() / Math.sqrt(n);
-        double rel = (r.getSpeedRandom() - expected) / expected;
-        if (Math.abs(rel) > 1e-6) {
-            notes.add(String.format(Locale.ROOT,
-                    "%s, только скорость, m = 1, N = %d: EVS = %.6g м/с, по формуле σV/√N = %.6g м/с "
-                    + "(σV/√(N−1) = %.6g); расхождение %+.2f %%",
-                    measurer, n, r.getSpeedRandom(), expected,
-                    d.getSigmaVelocity() / Math.sqrt(n - 1), 100 * rel));
+    private static void legacyVelocity(List<String> failures, List<String> notes) {
+        double[] evs = {0.01429, 0.01429, 0.02144, 0.02144};
+        double[] evd = {55.27, 0.2262};
+        for (int m = 0; m <= 3; m++) {
+            InputData d = new InputData();
+            d.setMeasurer(InputData.Measurer.GROUND);
+            d.setMeasured(InputData.Measured.VELOCITY);
+            d.setOrbitHeight(1000.0);
+            d.setTrackDistance(50.0);
+            d.setSigmaVelocity(0.1);
+            d.setDegree(m);
+            ErrorRow r = new Processor(d).setMode(Processor.Mode.LEGACY).table().get(0);
+            double relS = r.getSpeedRandom() / evs[m] - 1;
+            String line = String.format(Locale.ROOT,
+                    "m = %d: EVS %.4g м/с (прежняя %.4g, %+.2f %%)", m,
+                    r.getSpeedRandom(), evs[m], 100 * relS);
+            if (Math.abs(relS) > 5e-4) {
+                failures.add("расхождение с прежней программой по EVS: " + line);
+            }
+            if (m < evd.length) {
+                double relD = r.getSpeedDynamic() / evd[m] - 1;
+                line += String.format(Locale.ROOT, "; EVD %.4g м/с (прежняя %.4g, %+.2f %%)",
+                        r.getSpeedDynamic(), evd[m], 100 * relD);
+                if (Math.abs(relD) > 2e-3) {
+                    failures.add("расхождение с прежней программой по EVD: " + line);
+                }
+            }
+            notes.add(line);
         }
     }
 

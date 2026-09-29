@@ -356,7 +356,7 @@ public class ResultsPanel extends javax.swing.JPanel {
         for (Notebook.Quantity q : Notebook.Quantity.of(data.getMeasured())) {
             if (q == Notebook.Quantity.SPEED) {
                 // при m = 0 ошибки скорости не определены: не заносятся
-                if (q.isDefined(data.getDegree()) && !Double.isNaN(r.getSpeedTotal())) {
+                if (q.isDefined(data.getDegree(), data.getMeasured()) && !Double.isNaN(r.getSpeedTotal())) {
                     target.set(q, r.getSpeedDynamic(), r.getSpeedRandom(), r.getSpeedTotal());
                 }
             } else {
