@@ -173,7 +173,8 @@ public final class SmoothingCheck {
             f.setSize(size[0], size[1]);
             int done = 0;
             for (int t : ticks) {
-                f.advance(t - done);
+                // после 35 тактов объект на полпути к следующему измерению
+                f.advance(t - done, t == 35 ? 0.5 : 0);
                 done = t;
                 // окно получает ресурсы экрана, но не показывается
                 f.addNotify();

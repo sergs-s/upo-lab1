@@ -109,7 +109,20 @@ public class SmoothingFrame extends JFrame {
     private final JButton btnPause = new JButton("Пауза");
     private final JButton btnReset = new JButton("Заново");
     private final JComboBox<String> cmbSpeed = new JComboBox<String>(SPEED_TITLES);
-    private final Timer timer = new Timer(1000, e -> tick());
+
+    /** Кадр анимации, мс: 25 кадров в секунду – движение выглядит плавным. */
+    private static final int FRAME_MS = 40;
+    private final Timer timer = new Timer(FRAME_MS, e -> frame());
+    /**
+     * Доля пути объекта от последнего измерения до следующего (0…1): между
+     * измерениями объект движется плавно, измерение делается, когда он
+     * приходит в очередную точку.
+     */
+    private double phase;
+    /** Показ идёт только до следующего измерения (кнопка «Шаг»). */
+    private boolean stepping;
+    /** Время предыдущего кадра, нс. */
+    private long lastFrame;
 
     private SmoothingFrame(Window owner) {
         super("Сглаживание измерений дальности полиномом");
@@ -156,17 +169,11 @@ public class SmoothingFrame extends JFrame {
         center.add(bottom, c);
         center.setBorder(BorderFactory.createEmptyBorder(8, 8, 0, 8));
 
-        btnStep.addActionListener(e -> {
-            timer.stop();
-            tick();
-        });
-        btnStart.addActionListener(e -> {
-            timer.setInitialDelay(0);
-            timer.start();
-            updateButtons();
-        });
+        btnStep.addActionListener(e -> play(true));
+        btnStart.addActionListener(e -> play(false));
         btnPause.addActionListener(e -> {
             timer.stop();
+            stepping = false;
             updateButtons();
         });
         btnReset.addActionListener(e -> reset());
@@ -277,42 +284,105 @@ public class SmoothingFrame extends JFrame {
         return f;
     }
 
-    /** Делает заданное число тактов без таймера – для проверочных программ. */
-    void advance(int ticks) {
+    /**
+     * Делает заданное число тактов без таймера – для проверочных программ.
+     *
+     * @param fraction доля пути к следующему измерению после последнего такта
+     */
+    void advance(int ticks, double fraction) {
         for (int i = 0; i < ticks; i++) {
-            tick();
+            measure();
         }
+        phase = shown > 0 && shown < SmoothingModel.COUNT ? fraction : 0;
+        flight.repaint();
+        chart.repaint();
     }
 
     /** К началу: новая реализация шума, показ не запускается. */
     private void reset() {
         timer.stop();
+        stepping = false;
         model = new SmoothingModel(SmoothingModel.variantOne(), seed++);
         shown = 0;
+        phase = 0;
         refresh();
     }
 
-    /** Один такт – одно измерение. */
-    private void tick() {
+    /**
+     * Запуск показа. Первое измерение делается сразу – объект уже на входе
+     * в зону; дальше объект плавно движется к следующей точке измерения.
+     *
+     * @param step только до следующего измерения («Шаг»)
+     */
+    private void play(boolean step) {
+        if (shown == 0) {
+            measure();
+            if (step) {
+                return;
+            }
+        }
+        if (shown >= SmoothingModel.COUNT) {
+            return;
+        }
+        stepping = step;
+        lastFrame = System.nanoTime();
+        timer.start();
+        updateButtons();
+    }
+
+    /** Кадр анимации: объект продвигается; в очередной точке – измерение. */
+    private void frame() {
+        long now = System.nanoTime();
+        double dt = Math.min(0.5, (now - lastFrame) / 1e9);
+        lastFrame = now;
+        phase += dt * SPEEDS[Math.max(0, cmbSpeed.getSelectedIndex())];
+        if (phase >= 1) {
+            phase = 0;
+            measure();
+            if (stepping) {
+                timer.stop();
+                stepping = false;
+                updateButtons();
+            }
+        } else {
+            flight.repaint();
+            chart.repaint();
+        }
+    }
+
+    /** Такт: очередное измерение. */
+    private void measure() {
         if (shown >= SmoothingModel.COUNT) {
             timer.stop();
             updateButtons();
             return;
         }
         shown++;
+        phase = 0;
         if (shown >= SmoothingModel.COUNT) {
             timer.stop();
+            stepping = false;
         }
         refresh();
         int row = shown - 1;
         table.scrollRectToVisible(table.getCellRect(row, 0, true));
     }
 
+    /** Текущий момент (время модели движения): объект между измерениями. */
+    private double now() {
+        if (shown == 0) {
+            return model.getEntry();
+        }
+        if (shown >= SmoothingModel.COUNT) {
+            return model.time(SmoothingModel.COUNT - 1);
+        }
+        double a = model.time(shown - 1);
+        return a + phase * (model.time(shown) - a);
+    }
+
+    /** Скорость меняется сразу: она учитывается в каждом кадре. */
     private void applySpeed() {
-        int k = Math.max(0, cmbSpeed.getSelectedIndex());
-        int delay = (int) Math.round(1000.0 / SPEEDS[k]);
-        timer.setDelay(delay);
-        timer.setInitialDelay(delay);
+        lastFrame = System.nanoTime();
     }
 
     /** Число участков, по которым уже построен полином. */
@@ -470,37 +540,38 @@ public class SmoothingFrame extends JFrame {
 
             // прежние положения объекта – точками
             g.setColor(ORBIT);
-            for (int i = 0; i < shown - 1; i++) {
-                double a = signed(orb, model.time(i)) * scale;
-                double ox = px + orbitRadius * Math.sin(a);
-                double oy = cy - orbitRadius * Math.cos(a);
-                g.fill(new Ellipse2D.Double(ox - 2, oy - 2, 4, 4));
+            for (int i = 0; i < shown; i++) {
+                double am = signed(orb, model.time(i)) * scale;
+                double mx = px + orbitRadius * Math.sin(am);
+                double my = cy - orbitRadius * Math.cos(am);
+                g.fill(new Ellipse2D.Double(mx - 2, my - 2, 4, 4));
             }
 
-            // пункт
-            g.setColor(OBJECT);
-            g.fill(new Ellipse2D.Double(px - 4, py - 4, 8, 8));
+            // текущее положение объекта: между измерениями – плавно
+            double t = now();
+            double a = signed(orb, t) * scale;
+            double ox = px + orbitRadius * Math.sin(a);
+            double oy = cy - orbitRadius * Math.cos(a);
+            // измеритель – антенна-тарелка, повёрнутая к объекту
+            drawDish(g, px, py, Math.atan2(oy - (py - 12), ox - px));
             g.setColor(Color.DARK_GRAY);
-            g.drawString("измеритель", (float) (px + 9), (float) (py + 4));
+            g.drawString("измеритель", (float) (px + 16), (float) (py + 4));
+            // КА – корпус с панелями солнечных батарей вдоль орбиты
+            drawSpacecraft(g, ox, oy, a);
 
             if (shown > 0) {
-                double t = model.time(shown - 1);
-                double a = signed(orb, t) * scale;
-                double ox = px + orbitRadius * Math.sin(a);
-                double oy = cy - orbitRadius * Math.cos(a);
                 g.setColor(RANGE_LINE);
                 g.setStroke(new BasicStroke(2.0f));
-                g.draw(new Line2D.Double(px, py, ox, oy));
+                g.draw(new Line2D.Double(px, py - 12, ox, oy));
                 g.setStroke(new BasicStroke(1f));
                 g.setColor(OBJECT);
-                g.fill(new Ellipse2D.Double(ox - 5, oy - 5, 10, 10));
                 String label = "объект";
                 int lw = g.getFontMetrics().stringWidth(label);
-                float lx = (float) (ox + 9 + lw > right ? ox - 9 - lw : ox + 9);
-                g.drawString(label, lx, (float) (oy + 15));
+                float lx = (float) (ox + 18 + lw > right ? ox - 18 - lw : ox + 18);
+                g.drawString(label, lx, (float) (oy + 20));
                 // дальность у середины линии визирования
                 g.setColor(RANGE_LINE);
-                String r = "R = " + num(model.trueRange(shown - 1) / 1000.0) + " км";
+                String r = "R = " + num(model.trueRangeAt(t) / 1000.0) + " км";
                 int rw = g.getFontMetrics().stringWidth(r);
                 double mx = (px + ox) / 2;
                 float rx = (float) (mx > px ? mx - rw - 8 : mx + 8);
@@ -509,7 +580,7 @@ public class SmoothingFrame extends JFrame {
                 g.setColor(Color.BLACK);
                 g.setFont(g.getFont().deriveFont(Font.BOLD, 13f));
                 g.drawString("t = " + minutes(model.fromEntry(t)) + "   R = "
-                        + num(model.trueRange(shown - 1) / 1000.0) + " км", left, 18);
+                        + num(model.trueRangeAt(t) / 1000.0) + " км", left, 18);
                 g.setFont(g.getFont().deriveFont(Font.PLAIN, 12f));
             } else {
                 g.setColor(Color.GRAY);
@@ -532,6 +603,71 @@ public class SmoothingFrame extends JFrame {
     private static double signed(Trajectory.Orbital orb, double t) {
         double gamma = orb.centralAngle(t);
         return t < orb.closestApproachTime() ? -gamma : gamma;
+    }
+
+    /**
+     * Схематичный КА: корпус и две панели солнечных батарей, вытянутые
+     * вдоль орбиты (angle – угол положения на дуге, от вертикали).
+     */
+    private static void drawSpacecraft(Graphics2D g0, double x, double y, double angle) {
+        Graphics2D g = (Graphics2D) g0.create();
+        g.translate(x, y);
+        g.rotate(angle);
+        // панели солнечных батарей
+        for (int side = -1; side <= 1; side += 2) {
+            Rectangle2D panel = new Rectangle2D.Double(side < 0 ? -21 : 7, -4, 14, 8);
+            g.setColor(new Color(0x2C, 0x5A, 0x9E));
+            g.fill(panel);
+            g.setColor(new Color(0xB8, 0xCC, 0xE8));
+            g.setStroke(new BasicStroke(0.6f));
+            for (int k = 1; k < 3; k++) {
+                double lx = panel.getX() + k * panel.getWidth() / 3;
+                g.draw(new Line2D.Double(lx, -4, lx, 4));
+            }
+            g.draw(new Line2D.Double(panel.getX(), 0, panel.getMaxX(), 0));
+            g.setColor(Color.DARK_GRAY);
+            g.setStroke(new BasicStroke(1f));
+            g.draw(panel);
+            // штанга панели
+            g.draw(new Line2D.Double(side < 0 ? -7 : 5, 0, side < 0 ? -5 : 7, 0));
+        }
+        // корпус
+        g.setColor(new Color(0xD9, 0xA4, 0x41));
+        g.fill(new Rectangle2D.Double(-5, -6, 10, 12));
+        g.setColor(Color.DARK_GRAY);
+        g.draw(new Rectangle2D.Double(-5, -6, 10, 12));
+        // антенна корпуса, обращённая к Земле
+        g.draw(new Line2D.Double(0, 6, 0, 10));
+        g.fill(new Ellipse2D.Double(-1.5, 9, 3, 3));
+        g.dispose();
+    }
+
+    /**
+     * Схематичная антенна-тарелка на опоре: зеркало и облучатель
+     * повёрнуты по направлению dir (радианы, как у atan2) на объект.
+     */
+    private static void drawDish(Graphics2D g0, double x, double y, double dir) {
+        Graphics2D g = (Graphics2D) g0.create();
+        g.setColor(Color.DARK_GRAY);
+        g.setStroke(new BasicStroke(1.4f));
+        // опора
+        g.draw(new Line2D.Double(x, y, x, y - 12));
+        g.draw(new Line2D.Double(x - 5, y, x + 5, y));
+        g.translate(x, y - 12);
+        g.rotate(dir);
+        // зеркало – дуга, выпуклостью от объекта
+        Path2D.Double dish = new Path2D.Double();
+        dish.moveTo(2, -9);
+        dish.quadTo(-6, 0, 2, 9);
+        g.setColor(new Color(0xE8, 0xEC, 0xF0));
+        g.fill(dish);
+        g.setColor(Color.DARK_GRAY);
+        g.draw(dish);
+        // облучатель
+        g.setStroke(new BasicStroke(1f));
+        g.draw(new Line2D.Double(-2, 0, 8, 0));
+        g.fill(new Ellipse2D.Double(7, -1.5, 3, 3));
+        g.dispose();
     }
 
     /** Строка с уменьшением шрифта при нехватке места – как в GeometryView. */
@@ -626,7 +762,7 @@ public class SmoothingFrame extends JFrame {
 
             // истинная дальность – непрерывно до текущего момента
             if (shown > 0) {
-                double end = model.time(shown - 1);
+                double end = now();
                 Path2D.Double path = new Path2D.Double();
                 int n = Math.max(2, (int) Math.ceil((end - model.getEntry()) / duration * 600));
                 for (int k = 0; k <= n; k++) {
