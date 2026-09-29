@@ -27,8 +27,11 @@ import ru.vka.upo.model.VariantTable;
 final class JournalKeeper {
 
     private final MainFrame owner;
-    /** Журнал или null, если он отключён настройкой test.journal. */
-    private final Journal journal;
+    /**
+     * Журнал или null, если он отключён настройкой test.journal или не задан
+     * пароль преподавателя. Меняется при смене пароля: ключ журнала – из него.
+     */
+    private volatile Journal journal;
     private final ExecutorService writer;
     /** Запись, которая ведётся сейчас; null – журнал для текущего входа не ведётся. */
     private JournalRecord active;
@@ -212,7 +215,8 @@ final class JournalKeeper {
         lastSnapshot = snapshot;
         r.setModified(Math.max(System.currentTimeMillis(), r.getCreated()));
         active.setScreen(r.getScreen());
-        writer.submit(() -> report(journal.save(r)));
+        final Journal j = journal;
+        writer.submit(() -> report(j.save(r)));
     }
 
     private void report(boolean ok) {
@@ -247,10 +251,11 @@ final class JournalKeeper {
             }
         }
         final JournalRecord done = active;
+        final Journal j = journal;
         active = null;
         lastSnapshot = null;
         writer.submit(() -> {
-            journal.delete(done);
+            j.delete(done);
         });
         owner.setStatus("Работа завершена, запись в журнале удалена.");
         return true;
@@ -270,6 +275,27 @@ final class JournalKeeper {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
+    }
+
+    /** Число действительных записей журнала (для предупреждения о смене пароля). */
+    int recordCount() {
+        Journal j = journal;
+        return j == null ? 0 : j.list().size();
+    }
+
+    /**
+     * Пароль преподавателя сменён: записи журнала, зашифрованные прежним
+     * ключом, удаляются, дальше журнал ведётся с новым ключом.
+     *
+     * @return число удалённых записей
+     */
+    int passwordChanged() {
+        Journal old = journal;
+        int removed = old == null ? 0 : old.deleteAll();
+        journal = writer == null ? null : Journal.standard();
+        active = null;
+        lastSnapshot = null;
+        return removed;
     }
 
     /** Журнал программы (для окна журнала в режиме преподавателя). */

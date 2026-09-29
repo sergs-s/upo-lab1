@@ -17,8 +17,8 @@ import java.util.Properties;
  * нет, действуют значения по умолчанию. Кодировка файла UTF-8, строки вида
  *
  * <pre>
- * # пароль преподавателя
- * teacher.password = kaf33
+ * # способ вычисления динамической ошибки
+ * error.mode = anchor
  * </pre>
  */
 public final class Settings {
@@ -28,9 +28,6 @@ public final class Settings {
 
     /** Запасное имя на случай, если система не умеет русские имена файлов. */
     public static final String FILE_NAME_ASCII = "settings.properties";
-
-    /** Пароль преподавателя, действующий, пока не задан в настроечном файле. */
-    public static final String DEFAULT_TEACHER_PASSWORD = "kaf33";
 
     private static Properties cache;
 
@@ -118,7 +115,7 @@ public final class Settings {
 
     /** Настройки, по которым узнаётся настроечный файл этой программы. */
     private static final String[] KNOWN_KEYS = {
-        "teacher.password", "error.mode", "window.fullscreen",
+        "teacher.password", "teacher.password.hash", "error.mode", "window.fullscreen",
         "test.enabled", "notebook.transfer", "noise.montecarlo", "noise.trials",
         "item.c.anchor", "test.journal"
     };
@@ -129,14 +126,42 @@ public final class Settings {
         return v == null || v.trim().isEmpty() ? fallback : v.trim();
     }
 
-    /** Пароль преподавателя. */
-    public static String teacherPassword() {
-        return get("teacher.password", DEFAULT_TEACHER_PASSWORD);
+    /**
+     * Задан ли пароль преподавателя: хэшем (teacher.password.hash) или,
+     * до первого запуска программы, открытым текстом (teacher.password).
+     * Встроенного пароля нет: если не задан ни тот, ни другой, вход
+     * преподавателя невозможен. Подробнее – в {@link TeacherPassword}.
+     */
+    public static boolean isTeacherPasswordSet() {
+        return teacherSecret() != null;
     }
 
     /** Проверка пароля преподавателя. */
     public static boolean checkTeacherPassword(String entered) {
-        return entered != null && teacherPassword().equals(entered.trim());
+        if (entered == null) {
+            return false;
+        }
+        String hash = get(TeacherPassword.HASH_KEY, null);
+        if (hash != null) {
+            return TeacherPassword.verify(entered.trim(), hash);
+        }
+        String plain = get(TeacherPassword.PLAIN_KEY, null);
+        return plain != null && plain.equals(entered.trim());
+    }
+
+    /**
+     * Секрет, из которого получается ключ журнала обучающихся: хэш пароля
+     * преподавателя, а если пароль ещё записан открытым текстом – он сам.
+     * При смене пароля секрет меняется, и записи журнала становятся
+     * недействительными. null – пароль не задан.
+     */
+    public static String teacherSecret() {
+        String hash = get(TeacherPassword.HASH_KEY, null);
+        if (hash != null) {
+            return "hash:" + hash;
+        }
+        String plain = get(TeacherPassword.PLAIN_KEY, null);
+        return plain == null ? null : "plain:" + plain;
     }
 
     /**

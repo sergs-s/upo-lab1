@@ -21,6 +21,9 @@ public class App {
         // значок приложения: в Linux панель задач и переключатель окон берут
         // его не от окна, а от приложения целиком, поэтому ставится отдельно
         Emblem.applyToApplication();
+        // пароль преподавателя, вписанный в настроечный файл открытым
+        // текстом, заменяется его хэшем (см. TeacherPassword)
+        ru.vka.upo.model.TeacherPassword.migrate();
         SwingUtilities.invokeLater(new Runnable() {
             @Override
             public void run() {

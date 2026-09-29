@@ -139,6 +139,11 @@ public class LoginPanel extends javax.swing.JPanel {
             return s;
         }
         s.setRole(Student.Role.TEACHER);
+        if (!Settings.isTeacherPasswordSet()) {
+            // встроенного пароля нет: без заданного пароля входа нет
+            owner.setStatus("Пароль преподавателя не задан: вход преподавателя невозможен.");
+            return null;
+        }
         if (!Settings.checkTeacherPassword(new String(pwdTeacher.getPassword()))) {
             owner.setStatus("Пароль не подходит");
             pwdTeacher.setText("");
