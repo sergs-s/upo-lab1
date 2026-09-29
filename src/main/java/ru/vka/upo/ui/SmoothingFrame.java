@@ -434,12 +434,12 @@ public class SmoothingFrame extends JFrame {
         for (int s = 0; s < SmoothingModel.SEGMENTS; s++) {
             sb.append("<td align=right>&nbsp;&nbsp;участок ").append(s + 1).append("</td>");
         }
-        sb.append("</tr><tr><td>полином − измеренная</td>");
+        sb.append("</tr><tr><td>R* − R<sub>изм</sub></td>");
         for (int s = 0; s < SmoothingModel.SEGMENTS; s++) {
             sb.append("<td align=right>").append(s < smoothed() ? num(model.residualRms(s)) : "–")
               .append("</td>");
         }
-        sb.append("</tr><tr><td><font color='#C0392B'>истинная − полином (аналог ER)</font></td>");
+        sb.append("</tr><tr><td><font color='#C0392B'>R<sub>ист</sub> − R* (аналог ER)</font></td>");
         for (int s = 0; s < SmoothingModel.SEGMENTS; s++) {
             sb.append("<td align=right><font color='#C0392B'>")
               .append(s < smoothed() ? num(model.errorRms(s)) : "–").append("</font></td>");
@@ -590,24 +590,22 @@ public class SmoothingFrame extends JFrame {
                 float lx = (float) (ox + 18 + lw > right ? ox - 18 - lw : ox + 18);
                 g.drawString(label, lx, (float) (oy + 20));
                 // у середины линии визирования – две дальности одна над
-                // другой: истинная R (синим, меняется непрерывно) и
+                // другой: истинная Rист (синим, меняется непрерывно) и
                 // измеренная Rизм (красным, меняется только при измерении)
-                String r = "R = " + num(model.trueRangeAt(t) / 1000.0) + " км";
-                String rm = "R";
-                String rmSub = "изм";
+                String rtTail = " = " + num(model.trueRangeAt(t) / 1000.0) + " км";
                 String rmTail = " = " + num(model.measured(shown - 1) / 1000.0) + " км";
                 java.awt.FontMetrics fm = g.getFontMetrics();
                 Font subFont = g.getFont().deriveFont(g.getFont().getSize2D() * 0.8f);
                 java.awt.FontMetrics sfm = g.getFontMetrics(subFont);
-                int rmw = fm.stringWidth(rm) + sfm.stringWidth(rmSub) + fm.stringWidth(rmTail);
-                int bw = Math.max(fm.stringWidth(r), rmw);
+                int rtw = fm.stringWidth("R") + sfm.stringWidth("ист") + fm.stringWidth(rtTail);
+                int rmw = fm.stringWidth("R") + sfm.stringWidth("изм") + fm.stringWidth(rmTail);
+                int bw = Math.max(rtw, rmw);
                 double mx = (px + ox) / 2;
                 float rx = (float) (mx > px ? mx - bw - 8 : mx + 8);
                 rx = Math.max(left, Math.min(rx, right - bw));
                 float ry = (float) ((py + oy) / 2);
-                g.setColor(SIGHT);
-                g.drawString(r, rx, ry);
-                drawMeasured(g, rm, rmSub, rmTail, subFont, rx, ry + fm.getHeight());
+                drawIndexed(g, SIGHT, "R", "ист", rtTail, subFont, rx, ry);
+                drawIndexed(g, RANGE_LINE, "R", "изм", rmTail, subFont, rx, ry + fm.getHeight());
                 g.setColor(Color.BLACK);
                 g.setFont(g.getFont().deriveFont(Font.BOLD, 13f));
                 g.drawString("t = " + minutes(model.fromEntry(t)), left, 18);
@@ -635,11 +633,11 @@ public class SmoothingFrame extends JFrame {
         return t < orb.closestApproachTime() ? -gamma : gamma;
     }
 
-    /** Красная надпись «Rизм = … км» с нижним индексом «изм». */
-    private static void drawMeasured(Graphics2D g, String head, String sub, String tail,
-            Font subFont, float x, float y) {
+    /** Надпись вида «Rизм = … км» с нижним индексом заданным цветом. */
+    private static void drawIndexed(Graphics2D g, Color color, String head, String sub,
+            String tail, Font subFont, float x, float y) {
         Font f = g.getFont();
-        g.setColor(RANGE_LINE);
+        g.setColor(color);
         g.drawString(head, x, y);
         x += g.getFontMetrics().stringWidth(head);
         g.setFont(subFont);
@@ -1132,13 +1130,13 @@ public class SmoothingFrame extends JFrame {
         private final String[] names = {
             "№",
             "t, с",
-            red("Истинная<br>дальность, м"),
-            "<html><center>Измеренная<br>дальность, м</center></html>",
-            red("Измеренная −<br>истинная, м"),
+            red("Истинная<br>дальность<br>(R<sub>ист</sub>), м"),
+            "<html><center>Измеренная<br>дальность<br>(R<sub>изм</sub>), м</center></html>",
+            red("R<sub>изм</sub> − R<sub>ист</sub>, м"),
             "<html><center>Полином<br>R*(t) = α<sub>0</sub> + α<sub>1</sub>·t</center></html>",
-            "<html><center>Значение<br>полинома, м</center></html>",
-            "<html><center>Полином −<br>измеренная, м</center></html>",
-            red("Истинная −<br>полином, м")
+            "<html><center>Значение<br>полинома (R*), м</center></html>",
+            "<html><center>R* − R<sub>изм</sub>, м</center></html>",
+            red("R<sub>ист</sub> − R*, м")
         };
 
         private String red(String s) {
