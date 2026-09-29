@@ -108,6 +108,10 @@ public class HelpFrame extends JFrame {
         JButton close = new JButton("Закрыть");
         close.addActionListener(e -> dispose());
         JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 4));
+        // наглядный показ сглаживания измерений полиномом – отдельное окно
+        JButton smoothing = new JButton("Наглядно: сглаживание измерений");
+        smoothing.addActionListener(e -> SmoothingFrame.show(this));
+        buttons.add(smoothing);
         // в полноэкранном режиме кнопка «Открыть в браузере» не нужна:
         // и так всё видно во весь экран, а сам браузер всё равно окажется
         // позади главного окна программы и будет недоступен
@@ -147,6 +151,11 @@ public class HelpFrame extends JFrame {
             setUndecorated(true);
             setExtendedState(JFrame.MAXIMIZED_BOTH);
         }
+    }
+
+    /** Открыта ли справка из программы, развёрнутой на весь экран. */
+    boolean isFullScreenOwner() {
+        return fullScreenOwner;
     }
 
     /**
