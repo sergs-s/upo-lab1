@@ -71,6 +71,8 @@ public class SmoothingFrame extends JFrame {
     private static final Color ORBIT = new Color(0x77, 0x88, 0x99);
     private static final Color ORBIT_FAINT = new Color(0xC4, 0xCC, 0xD4);
     private static final Color RANGE_LINE = new Color(0xC0, 0x39, 0x2B);
+    /** Линия визирования и истинная дальность R – синим; в момент измерения линия вспыхивает красным. */
+    private static final Color SIGHT = new Color(0x1F, 0x5F, 0xBF);
     private static final Color ZONE = new Color(0x2E, 0x86, 0x4B);
     private static final Color OBJECT = new Color(0x1F, 0x4E, 0x79);
     private static final Color TRUE_CURVE = new Color(0x1F, 0x4E, 0x79);
@@ -123,6 +125,14 @@ public class SmoothingFrame extends JFrame {
     private boolean stepping;
     /** Время предыдущего кадра, нс. */
     private long lastFrame;
+    /** Длительность вспышки линии визирования в момент измерения, мс. */
+    private static final int FLASH_MS = 300;
+    /** Линия визирования горит красным: только что сделано измерение. */
+    private boolean flash;
+    private final Timer flashTimer = new Timer(FLASH_MS, e -> {
+        flash = false;
+        flight.repaint();
+    });
 
     private SmoothingFrame(Window owner) {
         super("Сглаживание измерений дальности полиномом");
@@ -251,6 +261,7 @@ public class SmoothingFrame extends JFrame {
             public void windowClosed(WindowEvent e) {
                 if (instance != null) {
                     instance.timer.stop();
+                    instance.flashTimer.stop();
                 }
                 instance = null;
                 if (ownerFinal != null) {
@@ -294,6 +305,8 @@ public class SmoothingFrame extends JFrame {
             measure();
         }
         phase = shown > 0 && shown < SmoothingModel.COUNT ? fraction : 0;
+        // объект уже отошёл от точки измерения – вспышка погасла
+        flash = flash && phase == 0;
         flight.repaint();
         chart.repaint();
     }
@@ -302,6 +315,8 @@ public class SmoothingFrame extends JFrame {
     private void reset() {
         timer.stop();
         stepping = false;
+        flashTimer.stop();
+        flash = false;
         model = new SmoothingModel(SmoothingModel.variantOne(), seed++);
         shown = 0;
         phase = 0;
@@ -359,6 +374,10 @@ public class SmoothingFrame extends JFrame {
         }
         shown++;
         phase = 0;
+        // в момент измерения линия визирования вспыхивает красным
+        flash = true;
+        flashTimer.setRepeats(false);
+        flashTimer.restart();
         if (shown >= SmoothingModel.COUNT) {
             timer.stop();
             stepping = false;
@@ -531,7 +550,8 @@ public class SmoothingFrame extends JFrame {
                 double ox = px + orbitRadius * Math.sin(angles[k]);
                 double oy = cy - orbitRadius * Math.cos(angles[k]);
                 g.setColor(ZONE);
-                g.draw(new Line2D.Double(px, py, ox, oy));
+                // из антенны, как и линия визирования: на краях зоны они совпадают
+                g.draw(new Line2D.Double(px, py - 12, ox, oy));
                 int tw = g.getFontMetrics().stringWidth(titles[k]);
                 double tx = Math.max(left, Math.min(ox - tw / 2.0, right - tw));
                 g.drawString(titles[k], (float) tx, (float) (oy - 10));
@@ -560,8 +580,8 @@ public class SmoothingFrame extends JFrame {
             drawSpacecraft(g, ox, oy, a);
 
             if (shown > 0) {
-                g.setColor(RANGE_LINE);
-                g.setStroke(new BasicStroke(2.0f));
+                g.setColor(flash ? RANGE_LINE : SIGHT);
+                g.setStroke(new BasicStroke(flash ? 3.0f : 2.0f));
                 g.draw(new Line2D.Double(px, py - 12, ox, oy));
                 g.setStroke(new BasicStroke(1f));
                 g.setColor(OBJECT);
@@ -569,18 +589,28 @@ public class SmoothingFrame extends JFrame {
                 int lw = g.getFontMetrics().stringWidth(label);
                 float lx = (float) (ox + 18 + lw > right ? ox - 18 - lw : ox + 18);
                 g.drawString(label, lx, (float) (oy + 20));
-                // дальность у середины линии визирования
-                g.setColor(RANGE_LINE);
+                // у середины линии визирования – две дальности одна над
+                // другой: истинная R (синим, меняется непрерывно) и
+                // измеренная Rизм (красным, меняется только при измерении)
                 String r = "R = " + num(model.trueRangeAt(t) / 1000.0) + " км";
-                int rw = g.getFontMetrics().stringWidth(r);
+                String rm = "R";
+                String rmSub = "изм";
+                String rmTail = " = " + num(model.measured(shown - 1) / 1000.0) + " км";
+                java.awt.FontMetrics fm = g.getFontMetrics();
+                Font subFont = g.getFont().deriveFont(g.getFont().getSize2D() * 0.8f);
+                java.awt.FontMetrics sfm = g.getFontMetrics(subFont);
+                int rmw = fm.stringWidth(rm) + sfm.stringWidth(rmSub) + fm.stringWidth(rmTail);
+                int bw = Math.max(fm.stringWidth(r), rmw);
                 double mx = (px + ox) / 2;
-                float rx = (float) (mx > px ? mx - rw - 8 : mx + 8);
-                rx = Math.max(left, Math.min(rx, right - rw));
-                g.drawString(r, rx, (float) ((py + oy) / 2));
+                float rx = (float) (mx > px ? mx - bw - 8 : mx + 8);
+                rx = Math.max(left, Math.min(rx, right - bw));
+                float ry = (float) ((py + oy) / 2);
+                g.setColor(SIGHT);
+                g.drawString(r, rx, ry);
+                drawMeasured(g, rm, rmSub, rmTail, subFont, rx, ry + fm.getHeight());
                 g.setColor(Color.BLACK);
                 g.setFont(g.getFont().deriveFont(Font.BOLD, 13f));
-                g.drawString("t = " + minutes(model.fromEntry(t)) + "   R = "
-                        + num(model.trueRangeAt(t) / 1000.0) + " км", left, 18);
+                g.drawString("t = " + minutes(model.fromEntry(t)), left, 18);
                 g.setFont(g.getFont().deriveFont(Font.PLAIN, 12f));
             } else {
                 g.setColor(Color.GRAY);
@@ -603,6 +633,20 @@ public class SmoothingFrame extends JFrame {
     private static double signed(Trajectory.Orbital orb, double t) {
         double gamma = orb.centralAngle(t);
         return t < orb.closestApproachTime() ? -gamma : gamma;
+    }
+
+    /** Красная надпись «Rизм = … км» с нижним индексом «изм». */
+    private static void drawMeasured(Graphics2D g, String head, String sub, String tail,
+            Font subFont, float x, float y) {
+        Font f = g.getFont();
+        g.setColor(RANGE_LINE);
+        g.drawString(head, x, y);
+        x += g.getFontMetrics().stringWidth(head);
+        g.setFont(subFont);
+        g.drawString(sub, x, y + f.getSize2D() * 0.25f);
+        x += g.getFontMetrics().stringWidth(sub);
+        g.setFont(f);
+        g.drawString(tail, x, y);
     }
 
     /**
