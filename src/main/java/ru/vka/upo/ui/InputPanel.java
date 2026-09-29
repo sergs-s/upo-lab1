@@ -27,6 +27,13 @@ public class InputPanel extends javax.swing.JPanel {
 
     private final MainFrame owner;
     private boolean updating;
+    /**
+     * Вариант, данные которого уже подставлены в поля. При повторном показе
+     * экрана они не подставляются снова: иначе затирались бы измеряемые
+     * параметры, СКО и прочее, что обучающийся изменил сам. Вернуть данные
+     * варианта можно кнопкой «Загрузить заново».
+     */
+    private VariantTable.Variant appliedVariant;
 
     public InputPanel(MainFrame owner) {
         this.owner = owner;
@@ -53,6 +60,9 @@ public class InputPanel extends javax.swing.JPanel {
             }
             return;
         }
+        if (v == appliedVariant) {
+            return;
+        }
         updating = true;
         try {
             cmbVariant.setSelectedItem(v);
@@ -60,6 +70,7 @@ public class InputPanel extends javax.swing.JPanel {
             updating = false;
         }
         applyVariant(v);
+        appliedVariant = v;
     }
 
     /**
@@ -164,7 +175,16 @@ public class InputPanel extends javax.swing.JPanel {
                         (javax.swing.text.JTextComponent) e.getComponent();
                 String s = c.getText();
                 if (s != null && s.indexOf(',') >= 0) {
-                    c.setText(s.replace(',', '.'));
+                    // замена текста идёт через удаление и вставку; на время
+                    // удаления поле пустое, и проверка запретила бы кнопку
+                    // «Рассчитать» как раз в момент щелчка по ней
+                    updating = true;
+                    try {
+                        c.setText(s.replace(',', '.'));
+                    } finally {
+                        updating = false;
+                    }
+                    revalidateData();
                 }
             }
         };
@@ -191,7 +211,27 @@ public class InputPanel extends javax.swing.JPanel {
             }
         };
         cmbMeasurer.addActionListener(al);
-        cmbMeasured.addActionListener(al);
+        cmbMeasured.addActionListener(new java.awt.event.ActionListener() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                // при переключении на измерение скорости пустое или нулевое
+                // СКО скорости заменяется типовым значением по умолчанию
+                InputData.Measured m = (InputData.Measured) cmbMeasured.getSelectedItem();
+                if (!updating && m != null && m.hasVelocity()) {
+                    StringBuilder ignore = new StringBuilder();
+                    double sv = parse(txtSigmaVelocity.getText(), "СКО измерения скорости", ignore);
+                    if (Double.isNaN(sv) || sv <= 0) {
+                        updating = true;
+                        try {
+                            txtSigmaVelocity.setText(num(new InputData().getSigmaVelocity()));
+                        } finally {
+                            updating = false;
+                        }
+                    }
+                }
+                revalidateData();
+            }
+        });
     }
 
     // ------------------------------------------------------- обмен с моделью
