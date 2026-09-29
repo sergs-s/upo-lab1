@@ -65,13 +65,11 @@ public final class MeasuredCheck {
         return Processor.Mode.ANCHOR;
     }
 
-    /** Исходные данные для бортового измерителя: разумные значения. */
+    /** Исходные данные: значения по умолчанию с заданными признаками. */
     private static InputData base(InputData.Measurer measurer, InputData.Measured measured) {
         InputData d = new InputData();
         d.setMeasurer(measurer);
         d.setMeasured(measured);
-        d.setTraverseDistance(5.0);
-        d.setRelativeSpeed(300.0);
         return d;
     }
 

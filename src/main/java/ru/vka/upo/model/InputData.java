@@ -8,8 +8,11 @@ package ru.vka.upo.model;
  * P0 – признак траектории, KV – признак измеряемых параметров,
  * TK – интервал измерений, m – степень аппроксимирующего полинома,
  * N – объём выборки, T – шаг измерений, M0 – момент привязки,
- * TR – траверзное расстояние, NIP – расстояние до трассы,
- * HV – высота орбиты, SR и SV – СКО измерений дальности и скорости.
+ * NIP – расстояние до трассы, HV – высота орбиты, SR и SV – СКО
+ * измерений дальности и скорости. Траверзного расстояния TR и
+ * относительной скорости V0 прежней программы нет: при бортовом
+ * измерителе он и объект лишь меняются местами (см. core.Trajectory),
+ * и траектория задаётся теми же высотой орбиты и расстоянием до трассы.
  */
 public class InputData implements Cloneable {
 
@@ -61,19 +64,20 @@ public class InputData implements Cloneable {
 
     /** Интервал измерений TK, с. */
     private double interval = 180.0;
-    /** Высота орбиты HV, км (для наземного измерителя). */
+    /** Высота орбиты HV, км. */
     private double orbitHeight = 1000.0;
-    /** Расстояние до трассы NIP, км (для наземного измерителя). */
+    /** Расстояние до трассы NIP, км: от точки на поверхности Земли (измерителя
+     *  или, при бортовом измерителе, объекта) до проекции орбиты. */
     private double trackDistance = 50.0;
-    /** Траверзное расстояние TR, км (для бортового измерителя). */
-    private double traverseDistance = 5.0;
-    /** Относительная скорость V0, м/с (для бортового измерителя). */
-    private double relativeSpeed = 0.0;
 
     /** СКО измерения дальности, м. */
     private double sigmaRange = 10.0;
-    /** СКО измерения радиальной скорости, м/с. */
-    private double sigmaVelocity = 0.1;
+    /**
+     * СКО измерения радиальной скорости, м/с. Значение по умолчанию 0,01 м/с –
+     * типовое для наземных измерительных пунктов, измеряющих КА (практикум
+     * кафедры «РНСиК», 2018, лабораторная работа по вторичной обработке).
+     */
+    private double sigmaVelocity = 0.01;
 
     /** Степень аппроксимирующего полинома m. */
     private int degree = 2;
@@ -137,22 +141,6 @@ public class InputData implements Cloneable {
 
     public void setTrackDistance(double trackDistance) {
         this.trackDistance = trackDistance;
-    }
-
-    public double getTraverseDistance() {
-        return traverseDistance;
-    }
-
-    public void setTraverseDistance(double traverseDistance) {
-        this.traverseDistance = traverseDistance;
-    }
-
-    public double getRelativeSpeed() {
-        return relativeSpeed;
-    }
-
-    public void setRelativeSpeed(double relativeSpeed) {
-        this.relativeSpeed = relativeSpeed;
     }
 
     public double getSigmaRange() {

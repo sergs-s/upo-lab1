@@ -100,8 +100,6 @@
                 <Component id="lblInterval" alignment="0" min="-2" max="-2" attributes="0"/>
                 <Component id="lblOrbitHeight" alignment="0" min="-2" max="-2" attributes="0"/>
                 <Component id="lblTrackDistance" alignment="0" min="-2" max="-2" attributes="0"/>
-                <Component id="lblTraverse" alignment="0" min="-2" max="-2" attributes="0"/>
-                <Component id="lblSpeed" alignment="0" min="-2" max="-2" attributes="0"/>
                 <Component id="lblSigmaRange" alignment="0" min="-2" max="-2" attributes="0"/>
                 <Component id="lblSigmaVelocity" alignment="0" min="-2" max="-2" attributes="0"/>
               </Group>
@@ -112,8 +110,6 @@
                 <Component id="txtInterval" alignment="0" min="-2" pref="190" max="-2" attributes="0"/>
                 <Component id="txtOrbitHeight" alignment="0" min="-2" pref="190" max="-2" attributes="0"/>
                 <Component id="txtTrackDistance" alignment="0" min="-2" pref="190" max="-2" attributes="0"/>
-                <Component id="txtTraverse" alignment="0" min="-2" pref="190" max="-2" attributes="0"/>
-                <Component id="txtSpeed" alignment="0" min="-2" pref="190" max="-2" attributes="0"/>
                 <Component id="txtSigmaRange" alignment="0" min="-2" pref="190" max="-2" attributes="0"/>
                 <Component id="txtSigmaVelocity" alignment="0" min="-2" pref="190" max="-2" attributes="0"/>
               </Group>
@@ -122,8 +118,6 @@
                 <Component id="lblIntervalUnit" alignment="0" min="-2" max="-2" attributes="0"/>
                 <Component id="lblOrbitHeightUnit" alignment="0" min="-2" max="-2" attributes="0"/>
                 <Component id="lblTrackDistanceUnit" alignment="0" min="-2" max="-2" attributes="0"/>
-                <Component id="lblTraverseUnit" alignment="0" min="-2" max="-2" attributes="0"/>
-                <Component id="lblSpeedUnit" alignment="0" min="-2" max="-2" attributes="0"/>
                 <Component id="lblSigmaRangeUnit" alignment="0" min="-2" max="-2" attributes="0"/>
                 <Component id="lblSigmaVelocityUnit" alignment="0" min="-2" max="-2" attributes="0"/>
               </Group>
@@ -161,18 +155,6 @@
                 <Component id="lblTrackDistance" alignment="3" min="-2" max="-2" attributes="0"/>
                 <Component id="txtTrackDistance" alignment="3" min="-2" max="-2" attributes="0"/>
                 <Component id="lblTrackDistanceUnit" alignment="3" min="-2" max="-2" attributes="0"/>
-              </Group>
-              <EmptySpace max="-2" attributes="0"/>
-              <Group type="103" groupAlignment="3" attributes="0">
-                <Component id="lblTraverse" alignment="3" min="-2" max="-2" attributes="0"/>
-                <Component id="txtTraverse" alignment="3" min="-2" max="-2" attributes="0"/>
-                <Component id="lblTraverseUnit" alignment="3" min="-2" max="-2" attributes="0"/>
-              </Group>
-              <EmptySpace max="-2" attributes="0"/>
-              <Group type="103" groupAlignment="3" attributes="0">
-                <Component id="lblSpeed" alignment="3" min="-2" max="-2" attributes="0"/>
-                <Component id="txtSpeed" alignment="3" min="-2" max="-2" attributes="0"/>
-                <Component id="lblSpeedUnit" alignment="3" min="-2" max="-2" attributes="0"/>
               </Group>
               <EmptySpace max="-2" attributes="0"/>
               <Group type="103" groupAlignment="3" attributes="0">
@@ -240,30 +222,6 @@
         <Component class="javax.swing.JLabel" name="lblTrackDistanceUnit">
           <Properties>
             <Property name="text" type="java.lang.String" value="км"/>
-          </Properties>
-        </Component>
-        <Component class="javax.swing.JLabel" name="lblTraverse">
-          <Properties>
-            <Property name="text" type="java.lang.String" value="Траверзное расстояние"/>
-          </Properties>
-        </Component>
-        <Component class="javax.swing.JTextField" name="txtTraverse">
-        </Component>
-        <Component class="javax.swing.JLabel" name="lblTraverseUnit">
-          <Properties>
-            <Property name="text" type="java.lang.String" value="км"/>
-          </Properties>
-        </Component>
-        <Component class="javax.swing.JLabel" name="lblSpeed">
-          <Properties>
-            <Property name="text" type="java.lang.String" value="Относительная скорость"/>
-          </Properties>
-        </Component>
-        <Component class="javax.swing.JTextField" name="txtSpeed">
-        </Component>
-        <Component class="javax.swing.JLabel" name="lblSpeedUnit">
-          <Properties>
-            <Property name="text" type="java.lang.String" value="м/с"/>
           </Properties>
         </Component>
         <Component class="javax.swing.JLabel" name="lblSigmaRange">

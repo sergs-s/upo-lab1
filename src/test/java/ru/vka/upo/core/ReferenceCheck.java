@@ -218,7 +218,6 @@ public final class ReferenceCheck {
         d.setSigmaRange(r[0]);
         d.setOrbitHeight(r[1]);
         d.setTrackDistance(r[2]);
-        d.setTraverseDistance(0.0);
         d.setSigmaVelocity(0.0);
         return d;
     }

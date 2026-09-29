@@ -8,12 +8,10 @@ import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
-import java.awt.geom.AffineTransform;
 import java.awt.geom.Arc2D;
 import java.awt.geom.Area;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Line2D;
-import java.awt.geom.Path2D;
 import java.awt.geom.Rectangle2D;
 import javax.swing.JPanel;
 import ru.vka.upo.core.Trajectory;
@@ -33,12 +31,8 @@ import ru.vka.upo.model.InputData;
  * пункт и объект: в этой плоскости отрезок между пунктом и объектом и есть
  * наклонная дальность.
  *
- * Для бортового измерителя (рис. 4.2 практикума) измеритель находится на
- * самолёте, пролетающем по прямой с относительной скоростью V0 над
- * объектом (целью) на земле; наименьшее (траверзное) расстояние TR
- * достигается в середине интервала измерений. Масштаб по обеим осям
- * одинаковый, пока траверзное расстояние на рисунке различимо; иначе оно
- * откладывается в условном масштабе, о чём говорит подпись.
+ * При бортовом измерителе чертёж тот же: измеритель и объект лишь меняются
+ * местами – измеритель на КА (точка на орбите), объект на поверхности.
  */
 public class GeometryView extends JPanel {
 
@@ -75,11 +69,6 @@ public class GeometryView extends JPanel {
                 RenderingHints.VALUE_ANTIALIAS_ON);
         g.setFont(getFont().deriveFont(Font.PLAIN, 11f));
 
-        if (trajectory instanceof Trajectory.Relative) {
-            paintRelative(g, (Trajectory.Relative) trajectory);
-            g.dispose();
-            return;
-        }
         if (!(trajectory instanceof Trajectory.Orbital)) {
             g.setColor(Color.GRAY);
             g.drawString("Чертёж появится после расчёта", 12, getHeight() / 2);
@@ -175,10 +164,13 @@ public class GeometryView extends JPanel {
         g.setColor(RANGE_LINE);
         g.drawString(String.format(Locale.ROOT, "R = %.1f км", range / 1000.0),
                 (float) ((px + ox) / 2 + 8), (float) ((py + oy) / 2));
+        // при бортовом измерителе он и объект меняются местами: измеритель
+        // на КА (точка на орбите), объект – на поверхности Земли
+        boolean airborne = data.getMeasurer() == InputData.Measurer.AIRBORNE;
         g.setColor(OBJECT);
-        g.drawString("объект", (float) (ox + 9), (float) (oy + 15));
+        g.drawString(airborne ? "измеритель" : "объект", (float) (ox + 9), (float) (oy + 15));
         g.setColor(Color.DARK_GRAY);
-        g.drawString("пункт", (float) (px + 9), (float) (py + 4));
+        g.drawString(airborne ? "объект" : "пункт", (float) (px + 9), (float) (py + 4));
 
         g.setColor(Color.GRAY);
         drawFitted(g, String.format(Locale.ROOT, "H = %.0f км, до трассы %.0f км, t = %.1f с",
@@ -186,193 +178,6 @@ public class GeometryView extends JPanel {
         drawFitted(g, "высота орбиты показана в условном масштабе, углы – в верном",
                 8, h - 5, w - 16);
         g.dispose();
-    }
-
-    /**
-     * Чертёж для бортового измерителя: самолёт с измерителем пролетает по
-     * прямой над объектом (целью), находящимся на земле. Построен в
-     * плоскости, проходящей через прямую пролёта и объект: в ней отрезок
-     * между измерителем и объектом и есть дальность, а перпендикуляр из
-     * объекта на прямую – траверзное расстояние TR (рис. 4.2 практикума).
-     */
-    private void paintRelative(Graphics2D g, Trajectory.Relative rel) {
-        int w = getWidth();
-        int h = getHeight();
-        int left = 24;
-        int right = w - 24;
-        int top = 22;
-        int bottom = h - 44;
-
-        double tk = data.getInterval();
-        double tr = data.getTraverseDistance() * 1000.0;   // м
-        double v0 = data.getRelativeSpeed();               // м/с
-        double tc = rel.closestApproachTime();
-
-        // положение самолёта вдоль прямой пролёта относительно траверза, м
-        double xStart = v0 * (0.0 - tc);
-        double xEnd = v0 * (tk - tc);
-        double span = Math.max(Math.abs(xStart), Math.abs(xEnd));
-        if (span < 1e-9) {
-            span = Math.max(tr, 1.0);
-        }
-
-        // земля – полоса внизу, объект на её поверхности посередине
-        double px = (left + right) / 2.0;
-        double py = bottom - 10;
-        Rectangle2D.Double ground = new Rectangle2D.Double(0, py, w, h - py);
-        g.setColor(EARTH);
-        g.fill(ground);
-        g.setColor(EARTH_EDGE);
-        g.setStroke(new BasicStroke(1.4f));
-        g.draw(new Line2D.Double(0, py, w, py));
-        g.setStroke(new BasicStroke(1f));
-
-        // над прямой пролёта оставляем строку под подписи отметок
-        double avail = Math.max(8, py - top - 12);
-        double sx = (right - left) / 2.0 / span;
-        double sy = avail / Math.max(tr, 1e-9);
-        double scale = Math.min(sx, sy);
-        double vy = tr * scale;
-        boolean conventional = false;
-        if (vy < Math.min(40, avail * 0.6)) {
-            // траверзное расстояние мало по сравнению с пройденным путём:
-            // откладываем его в условном масштабе, чтобы рисунок читался
-            vy = avail * 0.6;
-            conventional = true;
-        }
-        double ly = py - vy;                               // прямая пролёта
-        double plane = Math.max(6, Math.min(10, avail / 5));
-
-        // прямая пролёта на интервале измерений
-        double ax = px + xStart * scale;
-        double bx = px + xEnd * scale;
-        g.setColor(ORBIT);
-        g.setStroke(new BasicStroke(2.2f));
-        g.draw(new Line2D.Double(ax, ly, bx, ly));
-        g.setStroke(new BasicStroke(1f));
-
-        // траверзное расстояние: перпендикуляр из объекта на прямую
-        double ox = px + v0 * (currentTime - tc) * scale;  // самолёт сейчас
-        boolean planeRight = ox >= px;
-        g.setColor(PAST_LINE);
-        g.setStroke(new BasicStroke(1f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER,
-                10f, new float[] {3f, 3f}, 0f));
-        g.draw(new Line2D.Double(px, py, px, ly));
-        g.setStroke(new BasicStroke(1f));
-        String trText = String.format(Locale.ROOT, "TR = %s км", trim(tr / 1000.0));
-        int trw = g.getFontMetrics().stringWidth(trText);
-        if (vy >= 34) {
-            // при низком поле подпись не помещается: TR есть в подписи внизу
-            g.setColor(Color.GRAY);
-            g.drawString(trText, (float) (planeRight ? px - trw - 5 : px + 5),
-                    (float) ((py + ly) / 2 - 4));
-        }
-
-        // лучи к началу, траверзу и концу интервала; подпись отметки
-        // пропускается, если наезжает на уже выведенную
-        double[] marks = {tc, 0.0, tk};
-        String[] titles = {"траверз", "начало", "конец"};
-        java.util.List<double[]> placed = new java.util.ArrayList<double[]>();
-        for (int i = 0; i < marks.length; i++) {
-            double mx = px + v0 * (marks[i] - tc) * scale;
-            g.setColor(PAST_LINE);
-            g.draw(new Line2D.Double(px, py, mx, ly));
-            g.setColor(ORBIT);
-            g.fill(new Ellipse2D.Double(mx - 2.5, ly - 2.5, 5, 5));
-            int tw = g.getFontMetrics().stringWidth(titles[i]);
-            double tx = Math.max(4, Math.min(mx - tw / 2.0, w - 4 - tw));
-            boolean free = true;
-            for (double[] b : placed) {
-                if (tx < b[1] + 4 && tx + tw > b[0] - 4) {
-                    free = false;
-                }
-            }
-            if (free) {
-                g.setColor(Color.GRAY);
-                g.drawString(titles[i], (float) tx, (float) (ly - 9));
-                placed.add(new double[] {tx, tx + tw});
-            }
-        }
-
-        // луч дальности к текущему положению самолёта
-        g.setColor(RANGE_LINE);
-        g.setStroke(new BasicStroke(2.0f));
-        g.draw(new Line2D.Double(px, py, ox, ly));
-        g.setStroke(new BasicStroke(1f));
-        double range = trajectory.range(currentTime);
-        String rText = String.format(Locale.ROOT, "R = %.2f км", range / 1000.0);
-        int rw = g.getFontMetrics().stringWidth(rText);
-        double rx;
-        double ry;
-        if (vy >= 60) {
-            rx = (px + ox) / 2 + (planeRight ? 8 : -rw - 8);
-            ry = Math.min((py + ly) / 2 + 14, py - 3);
-        } else {
-            // при низком поле подпись у середины луча наехала бы на подпись
-            // измерителя: ставим её у объекта, со стороны, где самолёта нет
-            rx = planeRight ? px - rw - 10 : px + 10;
-            ry = py - 4;
-        }
-        rx = Math.max(4, Math.min(rx, w - 4 - rw));
-        g.drawString(rText, (float) rx, (float) ry);
-
-        // самолёт с измерителем и объект на земле
-        drawAircraft(g, ox, ly, plane, v0 >= 0 ? 0.0 : Math.PI, OBJECT);
-        g.setColor(OBJECT);
-        int mw = g.getFontMetrics().stringWidth("измеритель");
-        g.drawString("измеритель", (float) Math.max(4, Math.min(ox + plane + 2, w - 4 - mw)),
-                (float) (ly + plane + 9));
-        g.setColor(OBJECT);
-        g.fill(new Ellipse2D.Double(px - 4, py - 4, 8, 8));
-        g.setColor(Color.DARK_GRAY);
-        g.drawString("объект", (float) (px + 9), (float) (py + 13));
-
-        g.setColor(Color.GRAY);
-        drawFitted(g, String.format(Locale.ROOT,
-                "TR = %s км, V0 = %s м/с, t = %.1f с",
-                trim(tr / 1000.0), trim(v0), currentTime), 8, h - 18, w - 16);
-        drawFitted(g, conventional
-                ? "TR показано в условном масштабе, пройденный путь – в верном"
-                : "масштаб по обеим осям одинаковый",
-                8, h - 5, w - 16);
-    }
-
-    /**
-     * Силуэт самолёта (вид сверху) с центром в точке (x, y).
-     *
-     * @param size  половина длины фюзеляжа, пикселей
-     * @param angle направление полёта, рад (0 – вправо, −π/2 – вверх)
-     */
-    private static void drawAircraft(Graphics2D g, double x, double y, double size,
-            double angle, Color color) {
-        double k = size / 10.0;
-        Path2D.Double p = new Path2D.Double();
-        // фюзеляж с носом вправо (по оси x), крылья и стабилизатор
-        p.moveTo(10, 0);
-        p.lineTo(7, -1.4);
-        p.lineTo(1.5, -1.4);
-        p.lineTo(-2.5, -9);
-        p.lineTo(-4.5, -9);
-        p.lineTo(-2, -1.4);
-        p.lineTo(-7, -1.4);
-        p.lineTo(-9, -4.5);
-        p.lineTo(-10.5, -4.5);
-        p.lineTo(-9.5, 0);
-        p.lineTo(-10.5, 4.5);
-        p.lineTo(-9, 4.5);
-        p.lineTo(-7, 1.4);
-        p.lineTo(-2, 1.4);
-        p.lineTo(-4.5, 9);
-        p.lineTo(-2.5, 9);
-        p.lineTo(1.5, 1.4);
-        p.lineTo(7, 1.4);
-        p.closePath();
-        AffineTransform t = new AffineTransform();
-        t.translate(x, y);
-        t.rotate(angle);
-        t.scale(k, k);
-        g.setColor(color);
-        g.fill(t.createTransformedShape(p));
     }
 
     /**
@@ -390,14 +195,6 @@ public class GeometryView extends JPanel {
         g.setFont(use);
         g.drawString(text, x, y);
         g.setFont(f);
-    }
-
-    /** Число без лишних нулей. */
-    private static String trim(double v) {
-        if (v == Math.rint(v) && Math.abs(v) < 1e9) {
-            return String.valueOf((long) v);
-        }
-        return String.format(Locale.ROOT, "%.3g", v);
     }
 
     /** Центральный угол со знаком: до траверза объект слева, после – справа. */

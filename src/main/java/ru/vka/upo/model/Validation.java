@@ -51,9 +51,6 @@ public final class Validation {
     private Validation() {
     }
 
-    /** Наибольшее траверзное расстояние по руководству к работе, км. */
-    public static final double MAX_TRAVERSE_KM = 10.0;
-
     public static List<Issue> check(InputData d) {
         List<Issue> issues = new ArrayList<>();
 
@@ -109,29 +106,15 @@ public final class Validation {
                     + "больше нуля.", true));
         }
 
-        if (d.getMeasurer() == InputData.Measurer.GROUND) {
-            if (d.getOrbitHeight() <= 0) {
-                issues.add(new Issue("orbitHeight",
-                        "Высота орбиты должна быть больше нуля.", true));
-            }
-            if (d.getTrackDistance() < 0) {
-                issues.add(new Issue("trackDistance",
-                        "Расстояние до трассы не может быть отрицательным.", true));
-            }
-        } else {
-            if (d.getTraverseDistance() <= 0) {
-                issues.add(new Issue("traverseDistance",
-                        "Траверзное расстояние должно быть больше нуля.", true));
-            } else if (d.getTraverseDistance() > MAX_TRAVERSE_KM) {
-                issues.add(new Issue("traverseDistance",
-                        "Траверзное расстояние не должно превышать "
-                        + fmt(MAX_TRAVERSE_KM) + " км (ограничение модели, принятой "
-                        + "в руководстве к работе).", true));
-            }
-            if (d.getRelativeSpeed() <= 0) {
-                issues.add(new Issue("relativeSpeed",
-                        "Относительная скорость должна быть больше нуля.", true));
-            }
+        // высота орбиты и расстояние до трассы задаются при любом измерителе:
+        // у бортового измерителя он и объект лишь меняются местами
+        if (d.getOrbitHeight() <= 0) {
+            issues.add(new Issue("orbitHeight",
+                    "Высота орбиты должна быть больше нуля.", true));
+        }
+        if (d.getTrackDistance() < 0) {
+            issues.add(new Issue("trackDistance",
+                    "Расстояние до трассы не может быть отрицательным.", true));
         }
 
         return Collections.unmodifiableList(issues);

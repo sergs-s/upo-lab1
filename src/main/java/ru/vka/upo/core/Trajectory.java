@@ -6,10 +6,14 @@ import ru.vka.upo.model.InputData;
 /**
  * Модель изменения измеряемых текущих навигационных параметров во времени.
  *
- * Программа воспроизводит две обстановки, предусмотренные руководством
- * к работе: измерение с наземного пункта параметров объекта на круговой
- * орбите и измерение бортовым измерителем параметров относительного
- * движения двух объектов.
+ * Программа воспроизводит пролёт КА по круговой орбите над точкой на
+ * поверхности Земли. При наземном измерителе в этой точке стоит измеритель,
+ * а на КА – объект измерений; при бортовом они меняются местами: измеритель
+ * на КА, объект на поверхности. Дальность между двумя точками и её
+ * производная от того, какая из них измеритель, не зависят, поэтому
+ * модель движения в обоих случаях одна и та же; скорость КА – первая
+ * космическая для заданной высоты орбиты, измеряется её проекция на линию
+ * визирования (радиальная скорость).
  */
 public interface Trajectory {
 
@@ -24,8 +28,7 @@ public interface Trajectory {
 
     /** Модель по исходным данным. */
     static Trajectory of(InputData d) {
-        return d.getMeasurer() == InputData.Measurer.GROUND
-                ? new Orbital(d) : new Relative(d);
+        return new Orbital(d);
     }
 
     /**
@@ -100,38 +103,6 @@ public interface Trajectory {
         /** Наименьший центральный угол, достигаемый в траверзе, рад. */
         public double minCentralAngle() {
             return Math.acos(Math.max(-1.0, Math.min(1.0, cosBeta)));
-        }
-    }
-
-    /**
-     * Бортовой измеритель: два объекта сближаются по прямой с постоянной
-     * относительной скоростью, наименьшее (траверзное) расстояние задано.
-     */
-    class Relative implements Trajectory {
-
-        private final double traverseRange; // траверзное расстояние, м
-        private final double speed;         // относительная скорость, м/с
-        private final double traverse;      // момент траверза, с
-
-        public Relative(InputData d) {
-            this.traverseRange = d.getTraverseDistance() * 1000.0;
-            this.speed = d.getRelativeSpeed();
-            this.traverse = d.getInterval() / 2.0;
-        }
-
-        @Override
-        public double range(double t) {
-            return Geometry.relativeRange(traverseRange, speed, t, traverse);
-        }
-
-        @Override
-        public double rangeRate(double t) {
-            return Geometry.relativeRangeRate(speed, t, traverse, range(t));
-        }
-
-        @Override
-        public double closestApproachTime() {
-            return traverse;
         }
     }
 }

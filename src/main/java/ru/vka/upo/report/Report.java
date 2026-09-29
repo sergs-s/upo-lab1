@@ -79,13 +79,8 @@ public final class Report {
         rows.add(new String[] {"Признак траектории", String.valueOf(data.getMeasurer())});
         rows.add(new String[] {"Измеряемые параметры", String.valueOf(data.getMeasured())});
         rows.add(new String[] {"Интервал измерений, с", num(data.getInterval())});
-        if (data.getMeasurer() == InputData.Measurer.GROUND) {
-            rows.add(new String[] {"Высота орбиты, км", num(data.getOrbitHeight())});
-            rows.add(new String[] {"Расстояние до трассы, км", num(data.getTrackDistance())});
-        } else {
-            rows.add(new String[] {"Траверзное расстояние, км", num(data.getTraverseDistance())});
-            rows.add(new String[] {"Относительная скорость, м/с", num(data.getRelativeSpeed())});
-        }
+        rows.add(new String[] {"Высота орбиты, км", num(data.getOrbitHeight())});
+        rows.add(new String[] {"Расстояние до трассы, км", num(data.getTrackDistance())});
         if (measured.hasRange()) {
             rows.add(new String[] {"СКО измерения дальности, м", num(data.getSigmaRange())});
         }

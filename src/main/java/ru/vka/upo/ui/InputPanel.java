@@ -152,8 +152,6 @@ public class InputPanel extends javax.swing.JPanel {
         txtInterval.getDocument().addDocumentListener(dl);
         txtOrbitHeight.getDocument().addDocumentListener(dl);
         txtTrackDistance.getDocument().addDocumentListener(dl);
-        txtTraverse.getDocument().addDocumentListener(dl);
-        txtSpeed.getDocument().addDocumentListener(dl);
         txtSigmaRange.getDocument().addDocumentListener(dl);
         txtSigmaVelocity.getDocument().addDocumentListener(dl);
         txtStep.getDocument().addDocumentListener(dl);
@@ -171,8 +169,8 @@ public class InputPanel extends javax.swing.JPanel {
             }
         };
         for (javax.swing.JTextField c : new javax.swing.JTextField[] {
-                txtInterval, txtOrbitHeight, txtTrackDistance, txtTraverse,
-                txtSpeed, txtSigmaRange, txtSigmaVelocity, txtStep}) {
+                txtInterval, txtOrbitHeight, txtTrackDistance,
+                txtSigmaRange, txtSigmaVelocity, txtStep}) {
             c.addFocusListener(dot);
         }
 
@@ -206,8 +204,6 @@ public class InputPanel extends javax.swing.JPanel {
             txtInterval.setText(num(d.getInterval()));
             txtOrbitHeight.setText(num(d.getOrbitHeight()));
             txtTrackDistance.setText(num(d.getTrackDistance()));
-            txtTraverse.setText(num(d.getTraverseDistance()));
-            txtSpeed.setText(num(d.getRelativeSpeed()));
             txtSigmaRange.setText(num(d.getSigmaRange()));
             txtSigmaVelocity.setText(num(d.getSigmaVelocity()));
             spnDegree.setValue(d.getDegree());
@@ -230,8 +226,6 @@ public class InputPanel extends javax.swing.JPanel {
         d.setInterval(parse(txtInterval.getText(), "интервал измерений", parseErrors));
         d.setOrbitHeight(parse(txtOrbitHeight.getText(), "высота орбиты", parseErrors));
         d.setTrackDistance(parse(txtTrackDistance.getText(), "расстояние до трассы", parseErrors));
-        d.setTraverseDistance(parse(txtTraverse.getText(), "траверзное расстояние", parseErrors));
-        d.setRelativeSpeed(parse(txtSpeed.getText(), "относительная скорость", parseErrors));
         d.setSigmaRange(parse(txtSigmaRange.getText(), "СКО измерения дальности", parseErrors));
         d.setSigmaVelocity(parse(txtSigmaVelocity.getText(), "СКО измерения скорости", parseErrors));
         d.setDegree((Integer) spnDegree.getValue());
@@ -260,14 +254,9 @@ public class InputPanel extends javax.swing.JPanel {
 
     /** Поля, отключённые при текущем сочетании признаков, обязательными не считаются. */
     private boolean isRequired(String what) {
-        boolean ground = cmbMeasurer.getSelectedItem() == InputData.Measurer.GROUND;
+        // высота орбиты и расстояние до трассы нужны при любом измерителе:
+        // у бортового измерителя он и объект лишь меняются местами
         InputData.Measured m = (InputData.Measured) cmbMeasured.getSelectedItem();
-        if ("высота орбиты".equals(what) || "расстояние до трассы".equals(what)) {
-            return ground;
-        }
-        if ("траверзное расстояние".equals(what) || "относительная скорость".equals(what)) {
-            return !ground;
-        }
         if ("СКО измерения дальности".equals(what)) {
             return m != null && m.hasRange();
         }
@@ -296,11 +285,6 @@ public class InputPanel extends javax.swing.JPanel {
         StringBuilder parseErrors = new StringBuilder();
         InputData d = collect(parseErrors);
 
-        boolean ground = d.getMeasurer() == InputData.Measurer.GROUND;
-        setFieldEnabled(txtOrbitHeight, lblOrbitHeight, lblOrbitHeightUnit, ground);
-        setFieldEnabled(txtTrackDistance, lblTrackDistance, lblTrackDistanceUnit, ground);
-        setFieldEnabled(txtTraverse, lblTraverse, lblTraverseUnit, !ground);
-        setFieldEnabled(txtSpeed, lblSpeed, lblSpeedUnit, !ground);
         setFieldEnabled(txtSigmaRange, lblSigmaRange, lblSigmaRangeUnit,
                 d.getMeasured().hasRange());
         setFieldEnabled(txtSigmaVelocity, lblSigmaVelocity, lblSigmaVelocityUnit,
@@ -377,12 +361,6 @@ public class InputPanel extends javax.swing.JPanel {
         lblTrackDistance = new javax.swing.JLabel();
         txtTrackDistance = new javax.swing.JTextField();
         lblTrackDistanceUnit = new javax.swing.JLabel();
-        lblTraverse = new javax.swing.JLabel();
-        txtTraverse = new javax.swing.JTextField();
-        lblTraverseUnit = new javax.swing.JLabel();
-        lblSpeed = new javax.swing.JLabel();
-        txtSpeed = new javax.swing.JTextField();
-        lblSpeedUnit = new javax.swing.JLabel();
         lblSigmaRange = new javax.swing.JLabel();
         txtSigmaRange = new javax.swing.JTextField();
         lblSigmaRangeUnit = new javax.swing.JLabel();
@@ -423,8 +401,6 @@ public class InputPanel extends javax.swing.JPanel {
                     .addComponent(lblInterval)
                     .addComponent(lblOrbitHeight)
                     .addComponent(lblTrackDistance)
-                    .addComponent(lblTraverse)
-                    .addComponent(lblSpeed)
                     .addComponent(lblSigmaRange)
                     .addComponent(lblSigmaVelocity))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -434,8 +410,6 @@ public class InputPanel extends javax.swing.JPanel {
                     .addComponent(txtInterval, javax.swing.GroupLayout.PREFERRED_SIZE, 190, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(txtOrbitHeight, javax.swing.GroupLayout.PREFERRED_SIZE, 190, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(txtTrackDistance, javax.swing.GroupLayout.PREFERRED_SIZE, 190, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(txtTraverse, javax.swing.GroupLayout.PREFERRED_SIZE, 190, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(txtSpeed, javax.swing.GroupLayout.PREFERRED_SIZE, 190, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(txtSigmaRange, javax.swing.GroupLayout.PREFERRED_SIZE, 190, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(txtSigmaVelocity, javax.swing.GroupLayout.PREFERRED_SIZE, 190, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -443,8 +417,6 @@ public class InputPanel extends javax.swing.JPanel {
                     .addComponent(lblIntervalUnit)
                     .addComponent(lblOrbitHeightUnit)
                     .addComponent(lblTrackDistanceUnit)
-                    .addComponent(lblTraverseUnit)
-                    .addComponent(lblSpeedUnit)
                     .addComponent(lblSigmaRangeUnit)
                     .addComponent(lblSigmaVelocityUnit))
                 .addContainerGap(0, Short.MAX_VALUE))
@@ -475,16 +447,6 @@ public class InputPanel extends javax.swing.JPanel {
                     .addComponent(lblTrackDistance)
                     .addComponent(txtTrackDistance)
                     .addComponent(lblTrackDistanceUnit))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(pnlModelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(lblTraverse)
-                    .addComponent(txtTraverse)
-                    .addComponent(lblTraverseUnit))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(pnlModelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(lblSpeed)
-                    .addComponent(txtSpeed)
-                    .addComponent(lblSpeedUnit))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(pnlModelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(lblSigmaRange)
@@ -594,14 +556,6 @@ public class InputPanel extends javax.swing.JPanel {
         lblTrackDistance.setText("Расстояние до трассы");
 
         lblTrackDistanceUnit.setText("км");
-
-        lblTraverse.setText("Траверзное расстояние");
-
-        lblTraverseUnit.setText("км");
-
-        lblSpeed.setText("Относительная скорость");
-
-        lblSpeedUnit.setText("м/с");
 
         lblSigmaRange.setText("СКО измерения дальности");
 
@@ -751,14 +705,10 @@ public class InputPanel extends javax.swing.JPanel {
     private javax.swing.JLabel lblSigmaRangeUnit;
     private javax.swing.JLabel lblSigmaVelocity;
     private javax.swing.JLabel lblSigmaVelocityUnit;
-    private javax.swing.JLabel lblSpeed;
-    private javax.swing.JLabel lblSpeedUnit;
     private javax.swing.JLabel lblStep;
     private javax.swing.JLabel lblStepUnit;
     private javax.swing.JLabel lblTrackDistance;
     private javax.swing.JLabel lblTrackDistanceUnit;
-    private javax.swing.JLabel lblTraverse;
-    private javax.swing.JLabel lblTraverseUnit;
     private javax.swing.JLabel lblVariant;
     private javax.swing.JPanel pnlMode;
     private javax.swing.JPanel pnlModel;
@@ -771,9 +721,7 @@ public class InputPanel extends javax.swing.JPanel {
     private javax.swing.JTextField txtOrbitHeight;
     private javax.swing.JTextField txtSigmaRange;
     private javax.swing.JTextField txtSigmaVelocity;
-    private javax.swing.JTextField txtSpeed;
     private javax.swing.JTextField txtStep;
     private javax.swing.JTextField txtTrackDistance;
-    private javax.swing.JTextField txtTraverse;
     // End of variables declaration//GEN-END:variables
 }

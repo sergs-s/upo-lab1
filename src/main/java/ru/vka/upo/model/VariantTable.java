@@ -23,8 +23,8 @@ import java.util.Locale;
  * строки, начинающиеся с «#», пропускаются. Столбцы:
  * номер; признак траектории (1 наземный, 2 бортовой); признак скорости
  * (0 дальность, 1 скорость, 2 обе); интервал измерений, с; высота орбиты, км;
- * расстояние до трассы, км; траверзное расстояние, км; СКО дальности, м;
- * СКО скорости, м/с.
+ * расстояние до трассы, км; траверзное расстояние, км (от прежней программы,
+ * не используется); СКО дальности, м; СКО скорости, м/с.
  */
 public final class VariantTable {
 
@@ -156,7 +156,9 @@ public final class VariantTable {
                     d.setInterval(num(f[3]));
                     d.setOrbitHeight(num(f[4]));
                     d.setTrackDistance(num(f[5]));
-                    d.setTraverseDistance(num(f[6]));
+                    // f[6] – траверзное расстояние прежней программы:
+                    // в нынешней модели не используется, столбец сохранён
+                    // ради совместимости формата файла
                     d.setSigmaRange(num(f[7]));
                     d.setSigmaVelocity(num(f[8]));
                     list.add(new Variant(number, d));
@@ -206,8 +208,10 @@ public final class VariantTable {
             d.setSigmaRange(rows[i][0]);
             d.setOrbitHeight(rows[i][1]);
             d.setTrackDistance(rows[i][2]);
-            d.setTraverseDistance(0.0);
-            d.setSigmaVelocity(0.0);
+            // в вариантах измеряется только дальность; СКО скорости задано
+            // типовым (0,01 м/с, см. InputData), чтобы при переключении на
+            // измерение скорости расчёт был допустим без ввода вручную
+            d.setSigmaVelocity(0.01);
             list.add(new Variant(i + 1, d));
         }
         return Collections.unmodifiableList(list);
