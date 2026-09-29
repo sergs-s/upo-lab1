@@ -1017,11 +1017,11 @@ public class SmoothingFrame extends JFrame {
     private static final int COL_RESIDUAL = 7;
     private static final int COL_ERROR = 8;
 
-    /** Две строки записи полинома участка s: «R*(t) = α0» и «± α1·t, м». */
-    private String[] polynomialText(int s) {
+    /** Запись полинома участка s одной строкой: «R*(t) = α0 ± α1·t, м». */
+    private String polynomialText(int s) {
         double[] c = model.coefficients(s);
-        return new String[] {"R*(t) = " + num(c[0]),
-            (c[1] < 0 ? "− " : "+ ") + num(Math.abs(c[1])) + "·t, м"};
+        return "R*(t) = " + num(c[0]) + (c[1] < 0 ? " − " : " + ")
+                + num(Math.abs(c[1])) + "·t, м";
     }
 
     /** Ширина столбцов № и t – по числам в них, с небольшими зазорами. */
@@ -1038,7 +1038,12 @@ public class SmoothingFrame extends JFrame {
             col.setPreferredWidth(f[1]);
         }
         javax.swing.table.TableColumn poly = table.getColumnModel().getColumn(COL_POLY);
-        int w = fm.stringWidth("R*(t) = " + num(-9999999.9)) + 16;
+        // полином записывается без переноса: ширина – по самой длинной записи
+        int w = 0;
+        for (int s = 0; s < SmoothingModel.SEGMENTS; s++) {
+            w = Math.max(w, fm.stringWidth(polynomialText(s)));
+        }
+        w = Math.max(w, fm.stringWidth("R*(t) = 9 999 999,9 − 99 999,9·t, м")) + 16;
         poly.setMinWidth(w);
         poly.setPreferredWidth(w);
     }
@@ -1101,13 +1106,13 @@ public class SmoothingFrame extends JFrame {
                 if (s >= smoothed()) {
                     continue;
                 }
-                String[] lines = polynomialText(s);
+                String[] lines = {polynomialText(s)};
                 java.awt.FontMetrics fm = g.getFontMetrics(getFont());
                 java.awt.FontMetrics small = g.getFontMetrics(getFont().deriveFont(
                         getFont().getSize2D() - 1f));
                 String note = "t – от начала участка, с";
                 int lh = fm.getHeight();
-                int y = r.y + (r.height - 3 * lh) / 2 + fm.getAscent();
+                int y = r.y + (r.height - 2 * lh) / 2 + fm.getAscent();
                 g.setFont(getFont());
                 g.setColor(Color.BLACK);
                 for (String line : lines) {
@@ -1134,7 +1139,7 @@ public class SmoothingFrame extends JFrame {
             "<html><center>Измеренная<br>дальность<br>(R<sub>изм</sub>), м</center></html>",
             red("R<sub>изм</sub> − R<sub>ист</sub>, м"),
             "<html><center>Полином<br>R*(t) = α<sub>0</sub> + α<sub>1</sub>·t</center></html>",
-            "<html><center>Значение<br>полинома (R*), м</center></html>",
+            "<html><center>Значение<br>полинома<br>(R*), м</center></html>",
             "<html><center>R* − R<sub>изм</sub>, м</center></html>",
             red("R<sub>ист</sub> − R*, м")
         };
