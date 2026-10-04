@@ -10,8 +10,9 @@ import ru.vka.upo.model.VariantTable;
 /**
  * Расчёт для наглядного окна «Сглаживание измерений дальности полиномом»
  * ({@link SmoothingFrame}): пролёт объекта через зону видимости пункта,
- * 60 измерений дальности с шумом и их сглаживание полиномом первой степени
- * по участкам из 10 измерений.
+ * 60 измерений дальности с шумом и их сглаживание по участкам из 10
+ * измерений полиномом выбранной степени: 0 (усреднение, R*(t) = α0 – среднее
+ * измерений участка) или 1 (прямая R*(t) = α0 + α1·t).
  *
  * Расчётное ядро программы здесь не меняется и не используется для таблиц
  * результатов: берётся лишь та же модель движения ({@link Trajectory.Orbital}).
@@ -45,15 +46,38 @@ public final class SmoothingModel {
     private final double[] time = new double[COUNT];
     private final double[] trueRange = new double[COUNT];
     private final double[] noise = new double[COUNT];
-    /** Коэффициенты {α0, α1} по измерениям и по истинным значениям для каждого участка. */
+    /** Степень сглаживающего полинома: 0 или 1. */
+    private final int degree;
+    /** Зерно датчика шума: по нему ту же реализацию можно получить снова. */
+    private final long seed;
+    /**
+     * Коэффициенты полинома по измерениям и по истинным значениям для каждого
+     * участка: {α0} при степени 0, {α0, α1} при степени 1.
+     */
     private final double[][] fitMeasured = new double[SEGMENTS][];
     private final double[][] fitTrue = new double[SEGMENTS][];
 
     /**
+     * Модель со сглаживанием полиномом 1-й степени.
+     *
      * @param data исходные данные (траектория и СКО дальности)
      * @param seed зерно датчика шума: новое при каждом «Заново»
      */
     public SmoothingModel(InputData data, long seed) {
+        this(data, seed, 1);
+    }
+
+    /**
+     * @param data   исходные данные (траектория и СКО дальности)
+     * @param seed   зерно датчика шума: новое при каждом «Заново»
+     * @param degree степень сглаживающего полинома: 0 или 1
+     */
+    public SmoothingModel(InputData data, long seed, int degree) {
+        if (degree != 0 && degree != 1) {
+            throw new IllegalArgumentException("степень полинома – 0 или 1");
+        }
+        this.degree = degree;
+        this.seed = seed;
         this.data = data;
         this.orbit = new Trajectory.Orbital(data);
         double traverse = orbit.closestApproachTime();
@@ -74,8 +98,8 @@ public final class SmoothingModel {
             measured[i] = trueRange[i] + noise[i];
         }
         for (int s = 0; s < SEGMENTS; s++) {
-            fitMeasured[s] = fitLine(s, measured);
-            fitTrue[s] = fitLine(s, trueRange);
+            fitMeasured[s] = fit(s, measured);
+            fitTrue[s] = fit(s, trueRange);
         }
     }
 
@@ -118,10 +142,13 @@ public final class SmoothingModel {
     }
 
     /**
-     * Прямая МНК R*(t) = α0 + α1·t по измерениям участка s, t – от момента
-     * первого измерения участка. Прямые формулы линейной регрессии.
+     * Полином МНК выбранной степени по значениям участка s, t – от момента
+     * первого измерения участка. Прямые формулы: при степени 0 α0 – среднее
+     * значений участка, при степени 1 – формулы линейной регрессии.
+     *
+     * @return {α0} при степени 0, {α0, α1} при степени 1
      */
-    private double[] fitLine(int s, double[] values) {
+    private double[] fit(int s, double[] values) {
         int from = s * SEGMENT;
         double t0 = time[from];
         double st = 0;
@@ -132,6 +159,9 @@ public final class SmoothingModel {
         }
         double mt = st / SEGMENT;
         double mv = sv / SEGMENT;
+        if (degree == 0) {
+            return new double[] {mv};
+        }
         double stt = 0;
         double stv = 0;
         for (int i = from; i < from + SEGMENT; i++) {
@@ -145,6 +175,16 @@ public final class SmoothingModel {
 
     public InputData getData() {
         return data;
+    }
+
+    /** Степень сглаживающего полинома: 0 или 1. */
+    public int getDegree() {
+        return degree;
+    }
+
+    /** Зерно датчика шума этой реализации. */
+    public long getSeed() {
+        return seed;
     }
 
     public Trajectory.Orbital getOrbit() {
@@ -208,24 +248,33 @@ public final class SmoothingModel {
         return time[s * SEGMENT];
     }
 
-    /** Коэффициенты {α0, α1} полинома участка по реальным измерениям. */
+    /** Коэффициенты полинома участка по реальным измерениям: {α0} или {α0, α1}. */
     public double[] coefficients(int s) {
         return fitMeasured[s].clone();
     }
 
-    /** Коэффициенты {α0, α1} полинома участка по истинным значениям. */
+    /** Коэффициенты полинома участка по истинным значениям: {α0} или {α0, α1}. */
     public double[] trueCoefficients(int s) {
         return fitTrue[s].clone();
     }
 
     /** Значение полинома участка s (по реальным измерениям) в момент t модели, м. */
     public double polynomial(int s, double t) {
-        return fitMeasured[s][0] + fitMeasured[s][1] * (t - segmentStart(s));
+        return value(fitMeasured[s], t - segmentStart(s));
     }
 
     /** Значение полинома участка s по истинным значениям в момент t модели, м. */
     public double truePolynomial(int s, double t) {
-        return fitTrue[s][0] + fitTrue[s][1] * (t - segmentStart(s));
+        return value(fitTrue[s], t - segmentStart(s));
+    }
+
+    /** Значение полинома с коэффициентами c (по возрастанию степени) при x. */
+    private static double value(double[] c, double x) {
+        double v = 0;
+        for (int j = c.length - 1; j >= 0; j--) {
+            v = v * x + c[j];
+        }
+        return v;
     }
 
     /** Положение точки измерения на графике: R_ист + k·n, м. */

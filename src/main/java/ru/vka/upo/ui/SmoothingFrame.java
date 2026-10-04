@@ -49,8 +49,9 @@ import ru.vka.upo.core.Trajectory;
  *
  * Объект пролетает через зону видимости пункта (угол места не менее 7°),
  * за пролёт делается 60 измерений дальности с шумом. По каждым 10
- * измерениям методом наименьших квадратов строится полином первой
- * степени R*(t) = α0 + α1·t. Показ идёт по тактам: один такт – одно
+ * измерениям методом наименьших квадратов строится полином выбранной
+ * степени: 0 – усреднение, R*(t) = α0 (среднее измерений участка), или
+ * 1 – прямая R*(t) = α0 + α1·t. Показ идёт по тактам: один такт – одно
  * измерение. Слева – пролёт объекта над пунктом, справа – ход дальности,
  * измерения и отрезки полиномов, внизу – таблица чисел.
  *
@@ -111,6 +112,9 @@ public class SmoothingFrame extends JFrame {
     private final JButton btnPause = new JButton("Пауза");
     private final JButton btnReset = new JButton("Заново");
     private final JComboBox<String> cmbSpeed = new JComboBox<String>(SPEED_TITLES);
+    /** Степень сглаживающего полинома: строка списка с номером, равным степени. */
+    private final JComboBox<String> cmbDegree = new JComboBox<String>(
+            new String[] {"0 – усреднение", "1 – линейное"});
 
     /** Кадр анимации, мс: 25 кадров в секунду – движение выглядит плавным. */
     private static final int FRAME_MS = 40;
@@ -189,6 +193,8 @@ public class SmoothingFrame extends JFrame {
         btnReset.addActionListener(e -> reset());
         cmbSpeed.setSelectedIndex(1);
         cmbSpeed.addActionListener(e -> applySpeed());
+        cmbDegree.setSelectedIndex(1);
+        cmbDegree.addActionListener(e -> changeDegree());
         JButton close = new JButton("Закрыть");
         close.addActionListener(e -> dispose());
         JPanel controls = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 4));
@@ -198,6 +204,8 @@ public class SmoothingFrame extends JFrame {
         controls.add(btnReset);
         controls.add(new JLabel("   Скорость:"));
         controls.add(cmbSpeed);
+        controls.add(new JLabel("   Степень полинома:"));
+        controls.add(cmbDegree);
         controls.add(new JLabel("   "));
         controls.add(counter);
         JPanel closeBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 4));
@@ -317,9 +325,37 @@ public class SmoothingFrame extends JFrame {
         stepping = false;
         flashTimer.stop();
         flash = false;
-        model = new SmoothingModel(SmoothingModel.variantOne(), seed++);
+        model = new SmoothingModel(SmoothingModel.variantOne(), seed++, degree());
         shown = 0;
         phase = 0;
+        refresh();
+    }
+
+    /** Выбранная степень сглаживающего полинома: 0 или 1. */
+    private int degree() {
+        return Math.max(0, cmbDegree.getSelectedIndex());
+    }
+
+    /** Задаёт степень полинома, как выбор в списке, – для проверочных программ. */
+    void setDegree(int degree) {
+        cmbDegree.setSelectedIndex(degree);
+    }
+
+    /**
+     * Смена степени полинома: та же реализация шума пересглаживается
+     * полиномом новой степени. Число показанных измерений, положение
+     * объекта и ход показа (идёт или стоит) сохраняются; сглаженные
+     * участки, таблица, СКО по участкам, формулы и подписи перерисовываются.
+     */
+    private void changeDegree() {
+        if (model == null || model.getDegree() == degree()) {
+            return;
+        }
+        model = new SmoothingModel(SmoothingModel.variantOne(), model.getSeed(), degree());
+        table.getColumnModel().getColumn(COL_POLY).setHeaderValue(
+                tableModel.getColumnName(COL_POLY));
+        table.getTableHeader().repaint();
+        fitColumns();
         refresh();
     }
 
@@ -865,7 +901,8 @@ public class SmoothingFrame extends JFrame {
 
             // легенда – вверху по центру, где кривая ниже всего
             String[] names = {"истинная дальность", "измерения",
-                "полином 1-й степени по 10 измерениям"};
+                model.getDegree() == 0 ? "полином 0-й степени (среднее) по 10 измерениям"
+                        : "полином 1-й степени по 10 измерениям"};
             int lx = l + 10;
             int ly = 14;
             for (int k = 0; k < names.length; k++) {
@@ -949,8 +986,10 @@ public class SmoothingFrame extends JFrame {
         private static final float SIZE = 15f;
 
         /** Строки: чётные элементы – обычный текст, нечётные – нижние индексы. */
-        private final String[] general = {
+        private final String[] general1 = {
             "Полином 1-й степени:  R*(t) = α", "0", " + α", "1", "·t,  t – от начала участка"};
+        private final String[] general0 = {
+            "Полином 0-й степени:  R*(t) = α", "0", " (среднее измерений участка)"};
         private String[] current;
 
         FormulaPanel() {
@@ -965,10 +1004,15 @@ public class SmoothingFrame extends JFrame {
             } else {
                 double[] c = model.coefficients(s - 1);
                 int from = (s - 1) * SmoothingModel.SEGMENT + 1;
-                String sign = c[1] < 0 ? " − " : " + ";
-                current = new String[] {"Участок " + s + " (измерения " + from + "–"
-                        + (from + SmoothingModel.SEGMENT - 1) + "):  R*(t) = " + num(c[0])
-                        + sign + num(Math.abs(c[1])) + "·t, м  (t в секундах)"};
+                String head = "Участок " + s + " (измерения " + from + "–"
+                        + (from + SmoothingModel.SEGMENT - 1) + "):  R*(t) = " + num(c[0]);
+                if (c.length < 2) {
+                    current = new String[] {head + ", м"};
+                } else {
+                    String sign = c[1] < 0 ? " − " : " + ";
+                    current = new String[] {head + sign + num(Math.abs(c[1]))
+                            + "·t, м  (t в секундах)"};
+                }
             }
             repaint();
         }
@@ -980,7 +1024,7 @@ public class SmoothingFrame extends JFrame {
             g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
                     RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
             g.setColor(Color.BLACK);
-            drawLine(g, general, 20);
+            drawLine(g, model.getDegree() == 0 ? general0 : general1, 20);
             if (current != null) {
                 drawLine(g, current, 44);
             } else {
@@ -1034,9 +1078,12 @@ public class SmoothingFrame extends JFrame {
     private static final int COL_RESIDUAL = 7;
     private static final int COL_ERROR = 8;
 
-    /** Запись полинома участка s одной строкой: «R*(t) = α0 ± α1·t, м». */
+    /** Запись полинома участка s одной строкой: «R*(t) = α0, м» или «R*(t) = α0 ± α1·t, м». */
     private String polynomialText(int s) {
         double[] c = model.coefficients(s);
+        if (c.length < 2) {
+            return "R*(t) = " + num(c[0]) + ", м";
+        }
         return "R*(t) = " + num(c[0]) + (c[1] < 0 ? " − " : " + ")
                 + num(Math.abs(c[1])) + "·t, м";
     }
@@ -1060,7 +1107,8 @@ public class SmoothingFrame extends JFrame {
         for (int s = 0; s < SmoothingModel.SEGMENTS; s++) {
             w = Math.max(w, fm.stringWidth(polynomialText(s)));
         }
-        w = Math.max(w, fm.stringWidth("R*(t) = 9 999 999,9 − 99 999,9·t, м")) + 16;
+        w = Math.max(w, fm.stringWidth(model.getDegree() == 0 ? "R*(t) = 9 999 999,9, м"
+                : "R*(t) = 9 999 999,9 − 99 999,9·t, м")) + 16;
         poly.setMinWidth(w);
         poly.setPreferredWidth(w);
     }
@@ -1155,7 +1203,7 @@ public class SmoothingFrame extends JFrame {
             red("Истинная<br>дальность<br>(R<sub>ист</sub>), м"),
             "<html><center>Измеренная<br>дальность<br>(R<sub>изм</sub>), м</center></html>",
             red("R<sub>изм</sub> − R<sub>ист</sub>, м"),
-            "<html><center>Полином<br>R*(t) = α<sub>0</sub> + α<sub>1</sub>·t</center></html>",
+            null,   // полином: заголовок зависит от степени, см. getColumnName
             "<html><center>Значение<br>полинома<br>(R*), м</center></html>",
             "<html><center>R* − R<sub>изм</sub>, м</center></html>",
             red("R<sub>ист</sub> − R*, м")
@@ -1177,6 +1225,11 @@ public class SmoothingFrame extends JFrame {
 
         @Override
         public String getColumnName(int c) {
+            if (c == COL_POLY) {
+                return model != null && model.getDegree() == 0
+                        ? "<html><center>Полином<br>R*(t) = α<sub>0</sub></center></html>"
+                        : "<html><center>Полином<br>R*(t) = α<sub>0</sub> + α<sub>1</sub>·t</center></html>";
+            }
             return names[c];
         }
 

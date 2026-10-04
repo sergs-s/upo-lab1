@@ -21,10 +21,13 @@ import ru.vka.upo.model.InputData;
  * при нулевом шуме «измеренная − истинная» равна нулю, а «истинная −
  * полином» – разности истинной дальности и полинома по истинным значениям;
  * полином на графике совпадает с полиномом, построенным по «завышенным»
- * точкам графика.
+ * точкам графика. При степени 0 (усреднение) α0 участка равен среднему
+ * его измерений, полином на участке постоянен, а реализация шума та же,
+ * что у модели степени 1 с тем же зерном.
  *
  * Если есть экран (например, под Xvfb), окно отрисовывается без показа
- * в начальном состоянии и после 10, 35 и 60 тактов; картинки кладутся
+ * в начальном состоянии и после 10, 35 и 60 тактов, а также при степени
+ * 0 и 1 на середине показа (смена степени на ходу); картинки кладутся
  * в папку, заданную первым аргументом (по умолчанию – текущая).
  *
  * Запуск (не входит в поставку, только для отработки):
@@ -144,6 +147,46 @@ public final class SmoothingCheck {
                     + "СКО(истинная − полином) %.1f м%n", s + 1, m.residualRms(s), m.errorRms(s));
         }
 
+        // степень 0: усреднение
+        SmoothingModel m0 = new SmoothingModel(d, 12345L, 0);
+        check("степень 0 задана в модели", m0.getDegree() == 0 && m.getDegree() == 1);
+        double worstMean = 0;
+        double worstFlat = 0;
+        for (int sg = 0; sg < SmoothingModel.SEGMENTS; sg++) {
+            double sum = 0;
+            for (int k = 0; k < SmoothingModel.SEGMENT; k++) {
+                sum += m0.measured(sg * SmoothingModel.SEGMENT + k);
+            }
+            double[] c0 = m0.coefficients(sg);
+            worstMean = Math.max(worstMean, c0.length == 1
+                    ? Math.abs(c0[0] - sum / SmoothingModel.SEGMENT) : Double.MAX_VALUE);
+            for (int k = 0; k < SmoothingModel.SEGMENT; k++) {
+                double t = m0.time(sg * SmoothingModel.SEGMENT + k);
+                worstFlat = Math.max(worstFlat, Math.abs(m0.polynomial(sg, t) - c0[0]));
+                worstFlat = Math.max(worstFlat,
+                        Math.abs(m0.displayPolynomial(sg, t) - m0.displayPolynomial(sg, m0.segmentStart(sg))));
+            }
+        }
+        System.out.printf(Locale.ROOT, "Степень 0: расхождение α0 со средним %.3g м, "
+                + "непостоянство полинома на участке %.3g м%n", worstMean, worstFlat);
+        check("степень 0: α0 участка равен среднему его измерений (1e-9 м)", worstMean < 1e-9);
+        check("степень 0: полином на участке постоянен (и на графике)", worstFlat < 1e-6);
+        boolean sameNoise = true;
+        for (int i = 0; i < SmoothingModel.COUNT; i++) {
+            sameNoise &= m0.measured(i) == m.measured(i) && m0.trueRange(i) == m.trueRange(i);
+        }
+        check("при той же реализации шума Rизм и Rист у степеней 0 и 1 совпадают", sameNoise);
+        boolean oldConstructor = true;
+        SmoothingModel m1 = new SmoothingModel(d, 12345L, 1);
+        for (int sg = 0; sg < SmoothingModel.SEGMENTS; sg++) {
+            oldConstructor &= java.util.Arrays.equals(m1.coefficients(sg), m.coefficients(sg));
+        }
+        check("конструктор без степени – степень 1, те же коэффициенты", oldConstructor);
+        for (int sg = 0; sg < SmoothingModel.SEGMENTS; sg++) {
+            System.out.printf(Locale.ROOT, "  степень 0, участок %d: СКО(полином − измеренная) %.1f м, "
+                    + "СКО(истинная − полином) %.1f м%n", sg + 1, m0.residualRms(sg), m0.errorRms(sg));
+        }
+
         if (!GraphicsEnvironment.isHeadless()) {
             final String dir = args.length > 0 ? args[0] : ".";
             SwingUtilities.invokeAndWait(() -> {
@@ -190,6 +233,25 @@ public final class SmoothingCheck {
             }
             f.dispose();
         }
+        // обе степени на середине показа (после 3 сглаженных участков); степень
+        // меняется на ходу – та же реализация шума пересглаживается
+        SmoothingFrame f = SmoothingFrame.createHidden(7L);
+        f.setSize(1200, 850);
+        f.advance(35, 0.5);
+        for (int deg : new int[] {0, 1, 0}) {
+            f.setDegree(deg);
+            f.addNotify();
+            f.validate();
+            layout(f);
+            Container c = f.getContentPane();
+            BufferedImage img = new BufferedImage(c.getWidth(), c.getHeight(),
+                    BufferedImage.TYPE_INT_RGB);
+            ((javax.swing.JComponent) c).print(img.getGraphics());
+            File out = new File(dir, "smoothing_degree" + deg + ".png");
+            ImageIO.write(img, "png", out);
+            System.out.println("Отрисовано: " + out.getPath());
+        }
+        f.dispose();
     }
 
     private static void layout(Component c) {
