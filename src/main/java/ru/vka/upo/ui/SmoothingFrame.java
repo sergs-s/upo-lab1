@@ -558,6 +558,19 @@ public class SmoothingFrame extends JFrame {
             }
             g.setStroke(new BasicStroke(1f));
 
+            // границы пройденных участков: как только участок сглажен,
+            // остаётся чёрная штриховая линия из антенны в точку последнего
+            // измерения участка – там, где была линия визирования
+            g.setColor(Color.BLACK);
+            g.setStroke(new BasicStroke(1.2f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER,
+                    10f, new float[] {6f, 4f}, 0f));
+            for (int sg = 0; sg < smoothed(); sg++) {
+                double ab = signed(orb, model.time((sg + 1) * SmoothingModel.SEGMENT - 1)) * scale;
+                g.draw(new Line2D.Double(px, py - 12, px + orbitRadius * Math.sin(ab),
+                        cy - orbitRadius * Math.cos(ab)));
+            }
+            g.setStroke(new BasicStroke(1f));
+
             // прежние положения объекта – точками
             g.setColor(ORBIT);
             for (int i = 0; i < shown; i++) {
@@ -604,6 +617,10 @@ public class SmoothingFrame extends JFrame {
                 float rx = (float) (mx > px ? mx - bw - 8 : mx + 8);
                 rx = Math.max(left, Math.min(rx, right - bw));
                 float ry = (float) ((py + oy) / 2);
+                // светлая подложка: подписи не сливаются со штриховыми линиями
+                g.setColor(new Color(0xF7, 0xF9, 0xFC, 225));
+                g.fill(new Rectangle2D.Double(rx - 3, ry - fm.getAscent() - 1, bw + 6,
+                        2 * fm.getHeight() + 2));
                 drawIndexed(g, SIGHT, "R", "ист", rtTail, subFont, rx, ry);
                 drawIndexed(g, RANGE_LINE, "R", "изм", rmTail, subFont, rx, ry + fm.getHeight());
                 g.setColor(Color.BLACK);

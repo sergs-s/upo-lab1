@@ -177,6 +177,11 @@ public class LoginPanel extends javax.swing.JPanel {
         TaskFrame.show(this);
     }
 
+    /** Теорию логично посмотреть ещё до начала работы. */
+    private void btnHelpActionPerformed(java.awt.event.ActionEvent evt) {
+        HelpFrame.show(this);
+    }
+
     private void btnEnterActionPerformed(java.awt.event.ActionEvent evt) {
         Student s = collect();
         if (s == null) {
@@ -242,6 +247,7 @@ public class LoginPanel extends javax.swing.JPanel {
         scrInfo = new javax.swing.JScrollPane();
         txtInfo = new javax.swing.JTextArea();
         btnTask = new javax.swing.JButton();
+        btnHelp = new javax.swing.JButton();
         btnEnter = new javax.swing.JButton();
         lblName = new javax.swing.JLabel();
         txtName = new javax.swing.JTextField();
@@ -344,6 +350,13 @@ public class LoginPanel extends javax.swing.JPanel {
             }
         });
 
+        btnHelp.setText("Сведения из теории");
+        btnHelp.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnHelpActionPerformed(evt);
+            }
+        });
+
         btnEnter.setText("Войти");
         btnEnter.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -385,6 +398,8 @@ public class LoginPanel extends javax.swing.JPanel {
                         .addGap(0, 0, Short.MAX_VALUE)
                         .addComponent(btnTask, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(btnHelp, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(btnEnter, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addContainerGap())
         );
@@ -408,6 +423,7 @@ public class LoginPanel extends javax.swing.JPanel {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(btnTask)
+                    .addComponent(btnHelp)
                     .addComponent(btnEnter))
                 .addContainerGap())
         );
@@ -415,6 +431,7 @@ public class LoginPanel extends javax.swing.JPanel {
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton btnEnter;
+    private javax.swing.JButton btnHelp;
     private javax.swing.JButton btnTask;
     private javax.swing.JLabel lblAssigned;
     private javax.swing.JLabel lblAssignedValue;
